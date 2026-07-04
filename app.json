@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "NutriSense",
+    "slug": "nutrisense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nutrisense",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A6B4A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nutrisense.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "NutriSense utilise ta localisation pour trouver des magasins à proximité.",
+        "NSMotionUsageDescription": "NutriSense utilise les capteurs de mouvement pour la fonctionnalité secouer pour rafraîchir.",
+        "NSCameraUsageDescription": "NutriSense utilise la caméra pour scanner les codes-barres des produits alimentaires."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A6B4A"
+      },
+      "package": "com.nutrisense.app",
+      "permissions": [
+        "VIBRATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NutriSense utilise la caméra pour scanner les codes-barres des produits."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1A6B4A"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "NutriSense utilise ta localisation pour trouver des magasins."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}

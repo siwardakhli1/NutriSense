@@ -1,0 +1,227 @@
+// ==========================================
+// PRISMA SCHEMA - PostgreSQL
+// Générer le client : npx prisma generate
+// Créer/appliquer migrations : npx prisma migrate dev --name init
+// ==========================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  password      String
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  preferences       UserPreference?
+  refreshTokens     RefreshToken[]
+  healthGoals       HealthGoal[]
+  weekPlans         WeekPlan[]
+  shoppingLists     ShoppingList[]
+  favorites         Favorite[]
+  nutritionLogs     NutritionLog[]
+  weightLogs        WeightLog[]
+  aiConversations   AiConversation[]
+  fridgeItems       FridgeItem[]
+  passwordResetTokens PasswordResetToken[]
+  customRecipes     Recipe[]         @relation("UserRecipes")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  token     String   @id
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model UserPreference {
+  userId                String   @id @map("user_id")
+  budget                Int      @default(60)
+  goal                  String   @default("healthy")
+  dietary               Json     @default("[]")
+  servings              Int      @default(2)
+  locale                String   @default("fr")
+  theme                 String   @default("system")
+  notificationsEnabled  Boolean  @default(true) @map("notifications_enabled")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Recipe {
+  id          String   @id
+  name        String
+  emoji       String?
+  timeMinutes Int?     @map("time_minutes")
+  servings    Int?
+  difficulty  String?
+  ingredients Json
+  steps       Json
+  nutrition   Json
+  tags        Json     @default("[]")
+  userId      String?  @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User?      @relation("UserRecipes", fields: [userId], references: [id], onDelete: Cascade)
+  favorites Favorite[]
+
+  @@index([userId])
+  @@map("recipes")
+}
+
+model WeekPlan {
+  id            String   @id
+  userId        String   @map("user_id")
+  startDate     String   @map("start_date")
+  endDate       String   @map("end_date")
+  days          Json
+  budget        Int?
+  estimatedCost Float?   @map("estimated_cost")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shoppingLists ShoppingList[]
+
+  @@index([userId])
+  @@map("week_plans")
+}
+
+model ShoppingList {
+  id         String   @id
+  userId     String   @map("user_id")
+  weekPlanId String?  @map("week_plan_id")
+  items      Json
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekPlan WeekPlan? @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("shopping_lists")
+}
+
+model Favorite {
+  userId   String @map("user_id")
+  recipeId String @map("recipe_id")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, recipeId])
+  @@map("favorites")
+}
+
+model HealthGoal {
+  id                  String   @id
+  userId              String   @map("user_id")
+  weight              Float
+  targetWeight        Float    @map("target_weight")
+  height              Float
+  activityLevel       String   @default("medium") @map("activity_level")
+  dailyCaloriesTarget Int      @map("daily_calories_target")
+  dailyWaterTarget    Int      @default(2000) @map("daily_water_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("health_goals")
+}
+
+model NutritionLog {
+  id        String   @id
+  userId    String   @map("user_id")
+  source    String   // 'barcode' | 'photo' | 'manual' | 'recipe'
+  label     String
+  mealType  String   @default("other") @map("meal_type")
+  calories  Int
+  protein   Float    @default(0)
+  carbs     Float    @default(0)
+  fat       Float    @default(0)
+  fiber     Float    @default(0)
+  waterMl   Int      @default(0) @map("water_ml")
+  loggedAt  DateTime @default(now()) @map("logged_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+  @@map("nutrition_logs")
+}
+
+model WeightLog {
+  id       String   @id
+  userId   String   @map("user_id")
+  weight   Float
+  loggedAt DateTime @default(now()) @map("logged_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+  @@map("weight_logs")
+}
+
+model AiConversation {
+  id        String   @id
+  userId    String   @map("user_id")
+  role      String   // 'user' | 'assistant'
+  content   String
+  sources   Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_conversations")
+}
+
+model ProductCache {
+  barcode  String   @id
+  payload  Json
+  cachedAt DateTime @default(now()) @map("cached_at")
+
+  @@map("product_cache")
+}
+
+model FridgeItem {
+  id        String    @id
+  userId    String    @map("user_id")
+  name      String
+  quantity  Float     @default(1)
+  unit      String    @default("pièce")
+  expiresAt String?   @map("expires_at")
+  addedAt   DateTime  @default(now()) @map("added_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("fridge_items")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  code      String
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@map("password_reset_tokens")
+}

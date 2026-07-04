@@ -1,0 +1,66 @@
+# ==========================================
+# Docker Compose - Stack complet dev/prod
+# ==========================================
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nutrisense-postgres
+    environment:
+      POSTGRES_USER: nutrisense
+      POSTGRES_PASSWORD: nutrisense
+      POSTGRES_DB: nutrisense
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutrisense"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - nutrisense-net
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nutrisense-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://nutrisense:nutrisense@postgres:5432/nutrisense
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      LLM_PROVIDER: ${LLM_PROVIDER:-fallback}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    restart: unless-stopped
+    networks:
+      - nutrisense-net
+
+  # Interface d'admin Postgres (optionnel, tourne sur http://localhost:8080)
+  adminer:
+    image: adminer:latest
+    container_name: nutrisense-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - nutrisense-net
+    profiles:
+      - tools
+
+volumes:
+  postgres-data:
+
+networks:
+  nutrisense-net:
+    driver: bridge
