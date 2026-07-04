@@ -1,6 +1,4 @@
-// ==========================================
 // SERVICE - Envoi d'emails (Resend / Gmail / Console)
-// ==========================================
 
 interface EmailOptions {
   to: string;
@@ -76,14 +74,12 @@ async function sendEmail(opts: EmailOptions): Promise<void> {
   }
 }
 
-export async function sendPasswordResetEmail(
-  email: string,
-  name: string,
-  code: string
-): Promise<void> {
-  const subject = 'NutriSense - Réinitialisation de ton mot de passe 🔑';
+export function buildPasswordResetSubject(): string {
+  return 'NutriSense - Réinitialisation de ton mot de passe 🔑';
+}
 
-  const text = `Bonjour ${name},
+export function buildPasswordResetText(name: string, code: string): string {
+  return `Bonjour ${name},
 
 Tu as demandé à réinitialiser ton mot de passe sur NutriSense.
 
@@ -97,8 +93,10 @@ Si tu n'as pas fait cette demande, ignore cet email et ton mot de passe restera 
 
 À bientôt,
 L'équipe NutriSense`;
+}
 
-  const html = `<!DOCTYPE html>
+export function buildPasswordResetHtml(name: string, code: string): string {
+  return `<!DOCTYPE html>
 <html>
 <body style="font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; padding: 40px 20px;">
   <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -129,6 +127,15 @@ L'équipe NutriSense`;
   </p>
 </body>
 </html>`;
+}
 
+export async function sendPasswordResetEmail(
+  email: string,
+  name: string,
+  code: string
+): Promise<void> {
+  const subject = buildPasswordResetSubject();
+  const text = buildPasswordResetText(name, code);
+  const html = buildPasswordResetHtml(name, code);
   await sendEmail({ to: email, subject, html, text });
 }

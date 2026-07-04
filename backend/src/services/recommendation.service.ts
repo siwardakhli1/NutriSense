@@ -1,6 +1,4 @@
-// ==========================================
-// SERVICE - Recommandations & mode Frigo (v3 : synonymes + matching flou)
-// ==========================================
+// SERVICE - Recommandations & mode Frigo
 import { prisma } from '../config/database';
 
 export interface RecipeMatch {
@@ -45,7 +43,7 @@ const SYNONYMS: Record<string, string[]> = {
  * Normalise un nom d'ingrédient : lowercase, sans accents, sans "s" final,
  * mots-clés simples.
  */
-function normalizeIngredient(name: string): string {
+export function normalizeIngredient(name: string): string {
   return name
     .toLowerCase()
     .normalize('NFD')
@@ -58,7 +56,7 @@ function normalizeIngredient(name: string): string {
 /**
  * Vérifie si deux ingrédients matchent (avec synonymes).
  */
-function ingredientsMatch(fridgeItem: string, recipeIngredient: string): boolean {
+export function ingredientsMatch(fridgeItem: string, recipeIngredient: string): boolean {
   const f = normalizeIngredient(fridgeItem);
   const r = normalizeIngredient(recipeIngredient);
 

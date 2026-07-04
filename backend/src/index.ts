@@ -91,9 +91,12 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  console.error('Échec démarrage:', err);
-  process.exit(1);
-});
+// Ne pas démarrer le serveur en mode test (les tests utilisent supertest sur l'app Express)
+if (process.env.NODE_ENV !== 'test') {
+  start().catch((err) => {
+    console.error('Échec démarrage:', err);
+    process.exit(1);
+  });
+}
 
 export default app;

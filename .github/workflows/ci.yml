@@ -1,5 +1,5 @@
 # ==========================================
-# CI - Intégration continue NutriSense AI
+# CI - Intégration continue NutriSense
 # ==========================================
 # Se déclenche à chaque push et pull request sur main/develop
 # Vérifie :
@@ -8,7 +8,7 @@
 #   3. Le lint est OK
 #   4. Le frontend Expo compile
 
-name: CI - NutriSense AI
+name: CI - NutriSense
 
 on:
   push:
@@ -96,10 +96,10 @@ jobs:
           retention-days: 7
 
   # ==========================================
-  # JOB 2 : Frontend (Expo / React Native)
+  # JOB 2 : Frontend (type-check + lint + tests)
   # ==========================================
   frontend:
-    name: 📱 Frontend (type-check + lint)
+    name: 📱 Frontend (type-check + tests)
     runs-on: ubuntu-latest
 
     steps:
@@ -122,6 +122,17 @@ jobs:
       - name: 🎨 Lint (Expo)
         run: npm run lint
         continue-on-error: true
+
+      - name: 🧪 Run tests + coverage
+        run: npm run test:coverage
+
+      - name: 📊 Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: coverage/
+          retention-days: 7
 
   # ==========================================
   # JOB 3 : Docker (validation image)

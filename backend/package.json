@@ -1,11 +1,11 @@
 {
   "name": "nutrisense-backend",
   "version": "2.0.0",
-  "description": "Backend NutriSense - fin d'études Bac+5 - PostgreSQL + Prisma",
+  "description": "Backend NutriSense - fin d'\u00e9tudes Bac+5 - PostgreSQL + Prisma",
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc && prisma generate",
+    "build": "tsc -p tsconfig.build.json && prisma generate",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "jest --coverage",

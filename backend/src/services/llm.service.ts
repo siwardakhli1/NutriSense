@@ -22,7 +22,7 @@ interface UserContext {
 /**
  * Construit le prompt système pour ancrer la réponse dans le contexte user + RAG.
  */
-function buildSystemPrompt(context: UserContext, chunks: ReturnType<typeof retrieveRelevantChunks>): string {
+export function buildSystemPrompt(context: UserContext, chunks: ReturnType<typeof retrieveRelevantChunks>): string {
   const contextLines = [
     `Objectif utilisateur : ${context.goal || 'non défini'}`,
     context.dietary?.length ? `Régimes : ${context.dietary.join(', ')}` : null,
@@ -116,7 +116,7 @@ export async function generateAdvice(
 /**
  * Fallback à règles si le LLM est indispo. Utilise quand même le RAG.
  */
-function fallbackRuleBased(
+export function fallbackRuleBased(
   message: string,
   context: UserContext,
   chunks: ReturnType<typeof retrieveRelevantChunks>

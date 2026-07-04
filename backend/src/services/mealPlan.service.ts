@@ -1,6 +1,4 @@
-// ==========================================
-// SERVICE - Génération de plan de repas hebdo (v4 : anti-répétition stricte)
-// ==========================================
+// SERVICE - Génération de plan de repas hebdo
 import { prisma } from '../config/database';
 import { generateId } from '../utils/helpers';
 
@@ -31,7 +29,7 @@ type MealType = typeof MEAL_TYPES[number];
 /**
  * Score une recette selon les préférences user.
  */
-function scoreRecipe(recipe: Recipe, options: GenerateOptions): number {
+export function scoreRecipe(recipe: Recipe, options: GenerateOptions): number {
   const tags = (recipe.tags as string[]) || [];
   let score = Math.random() * 2; // aléatoire pour varier d'une génération à l'autre
 
@@ -62,7 +60,7 @@ function scoreRecipe(recipe: Recipe, options: GenerateOptions): number {
  * Sépare les recettes en 3 pools : breakfast, lunch, dinner.
  * Une recette peut être dans plusieurs pools selon ses tags.
  */
-function splitByMealType(recipes: Recipe[]): Record<MealType, Recipe[]> {
+export function splitByMealType(recipes: Recipe[]): Record<MealType, Recipe[]> {
   const pools: Record<MealType, Recipe[]> = {
     breakfast: [],
     lunch: [],
@@ -121,8 +119,6 @@ export async function generateWeekPlan(options: GenerateOptions) {
       return sb - sa;
     }),
   };
-
-  // ⚠️ ANTI-RÉPÉTITION : chaque recette utilisée ne pourra plus l'être
   const usedRecipeIds = new Set<string>();
   const days: any[] = [];
 
@@ -246,7 +242,7 @@ export async function generateShoppingList(userId: string, weekPlan: any) {
   };
 }
 
-function estimateIngredientPrice(ing: any): number {
+export function estimateIngredientPrice(ing: any): number {
   const priceMap: Record<string, number> = {
     fruits_legumes: 2, feculents: 1.5, proteines: 4,
     produits_laitiers: 2.5, epicerie: 1, autres: 2,
