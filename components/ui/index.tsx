@@ -27,6 +27,10 @@ interface ButtonProps {
   loading?: boolean;
   icon?: React.ReactNode;
   style?: ViewStyle;
+  // Props accessibilité (WCAG 2.1 / RGAA 4.1)
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  testID?: string;
 }
 
 export function Button({
@@ -38,6 +42,9 @@ export function Button({
   loading = false,
   icon,
   style,
+  accessibilityLabel,
+  accessibilityHint,
+  testID,
 }: ButtonProps) {
   const { colors } = useTheme();
 
@@ -63,6 +70,13 @@ export function Button({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.8}
+      // Accessibilité RGAA 4.1 : chaque bouton doit être identifiable par un lecteur d'écran
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      testID={testID}
       style={[
         {
           backgroundColor: bgColor,
@@ -76,6 +90,8 @@ export function Button({
           opacity: disabled ? 0.4 : 1,
           borderWidth: variant === 'outline' ? 2 : 0,
           borderColor: colors.primary,
+          // Cible tactile minimum 48x48px (WCAG 2.5.5)
+          minHeight: 48,
         },
         variant === 'primary' && {
           shadowColor: colors.primary,
@@ -105,9 +121,13 @@ interface CardProps {
   onPress?: () => void;
   style?: ViewStyle;
   variant?: 'elevated' | 'flat' | 'outline';
+  // Props accessibilité
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  testID?: string;
 }
 
-export function Card({ children, onPress, style, variant = 'elevated' }: CardProps) {
+export function Card({ children, onPress, style, variant = 'elevated', accessibilityLabel, accessibilityHint, testID }: CardProps) {
   const { colors } = useTheme();
 
   const cardStyle: ViewStyle = {
@@ -129,7 +149,16 @@ export function Card({ children, onPress, style, variant = 'elevated' }: CardPro
 
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[cardStyle, style]}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onPress}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        testID={testID}
+        style={[cardStyle, style]}
+      >
         {children}
       </TouchableOpacity>
     );
@@ -168,15 +197,20 @@ export function InputField({ label, error, icon, style, ...props }: InputFieldPr
           },
         ]}
       >
-        {icon && <View style={{ marginRight: 10 }}>{icon}</View>}
+        {icon && <View style={{ marginRight: 10 }} accessibilityElementsHidden={true} importantForAccessibility="no">{icon}</View>}
         <TextInput
           placeholderTextColor={colors.textMuted}
+          // Accessibilité RGAA 11.1 : le label est lié au champ
+          accessible={true}
+          accessibilityLabel={label || props.placeholder}
+          accessibilityHint={error ? `Erreur : ${error}` : undefined}
           style={[
             {
               flex: 1,
               paddingVertical: 14,
               fontSize: FontSize.md,
               color: colors.text,
+              minHeight: 48, // Cible tactile WCAG 2.5.5
             },
             style,
           ]}
@@ -184,7 +218,13 @@ export function InputField({ label, error, icon, style, ...props }: InputFieldPr
         />
       </View>
       {error && (
-        <Text style={{ fontSize: FontSize.xs, color: colors.error, marginLeft: 4 }}>{error}</Text>
+        <Text
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+          style={{ fontSize: FontSize.xs, color: colors.error, marginLeft: 4 }}
+        >
+          {error}
+        </Text>
       )}
     </View>
   );

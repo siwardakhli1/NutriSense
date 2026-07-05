@@ -37,6 +37,11 @@ export function MealCard({ label, labelIcon, meal, onPress }: MealCardProps) {
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={onPress}
+        // Accessibilité RGAA 6, 7 : label descriptif de la recette
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${label} : ${meal.recipe.name}, ${meal.recipe.time || 30} minutes, ${meal.recipe.nutrition?.calories || 0} calories`}
+        accessibilityHint="Ouvre les détails de la recette"
         style={{
           padding: 20,
           borderRadius: BorderRadius.xl,

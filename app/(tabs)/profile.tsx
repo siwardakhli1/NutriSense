@@ -33,6 +33,11 @@ function SettingsRow({
     <TouchableOpacity
       activeOpacity={onPress ? 0.7 : 1}
       onPress={onPress}
+      // Accessibilité RGAA : label descriptif + rôle button quand cliquable
+      accessible={true}
+      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityLabel={value ? `${label}, valeur : ${value}` : label}
+      accessibilityHint={onPress ? `Ouvre les paramètres de ${label}` : undefined}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -40,6 +45,7 @@ function SettingsRow({
         paddingHorizontal: 4,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+        minHeight: 48, // Cible tactile WCAG 2.5.5
       }}
     >
       <View
@@ -52,6 +58,8 @@ function SettingsRow({
           justifyContent: 'center',
           marginRight: 14,
         }}
+        accessibilityElementsHidden={true}
+        importantForAccessibility="no"
       >
         <Text style={{ fontSize: 18 }}>{icon}</Text>
       </View>

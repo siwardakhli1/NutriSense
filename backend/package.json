@@ -15,7 +15,9 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "db:push": "prisma db push",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "security:audit": "npm audit --audit-level=high",
+    "security:fix": "npm audit fix"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

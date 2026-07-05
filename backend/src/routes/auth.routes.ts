@@ -11,6 +11,7 @@ import { authMiddleware, AuthRequest, signAccessToken, signRefreshToken } from '
 import { authLimiter } from '../middlewares/rateLimit.middleware';
 import { registerSchema, loginSchema, refreshSchema } from '../schemas';
 import { generateId } from '../utils/helpers';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -46,14 +47,17 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
 
 router.post('/login', authLimiter, validate(loginSchema), async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  const ip = req.ip || req.socket.remoteAddress;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
+    logger.security('LOGIN_FAILED_UNKNOWN_EMAIL', { email, ip });
     return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Email ou mot de passe incorrect' });
   }
 
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) {
+    logger.security('LOGIN_FAILED_WRONG_PASSWORD', { userId: user.id, email, ip });
     return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Email ou mot de passe incorrect' });
   }
 
@@ -61,6 +65,8 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
   const refreshToken = signRefreshToken(user.id);
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt } });
+
+  logger.security('LOGIN_SUCCESS', { userId: user.id, email, ip });
 
   res.json({
     user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt.toISOString() },

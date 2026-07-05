@@ -25,6 +25,8 @@ export default function RecipesScreen() {
     <Card
       onPress={() => router.push(`/recipe/${item.id}`)}
       style={{ marginBottom: 12 }}
+      accessibilityLabel={`Recette ${item.name}, ${item.time} minutes, ${item.nutrition.calories} calories, ${item.servings} personnes`}
+      accessibilityHint="Ouvre les détails de la recette"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
         <View

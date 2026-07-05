@@ -56,12 +56,15 @@ describe('Auth routes - extension', () => {
   });
 
   it('POST /refresh renouvelle le token', async () => {
+    // Petite pause pour éviter que le nouveau JWT soit identique à l'ancien
+    // (signés avec la même timestamp seconde = même token)
+    await new Promise((r) => setTimeout(r, 1100));
     const res = await request(app)
       .post('/api/auth/refresh')
       .send({ refreshToken });
     expect(res.status).toBe(200);
     expect(res.body.accessToken).toBeDefined();
-  });
+  }, 10000);
 
   it('POST /refresh refuse un token invalide', async () => {
     const res = await request(app)
