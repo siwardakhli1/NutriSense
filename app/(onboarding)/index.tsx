@@ -4,6 +4,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage } from '@/hooks/useAppContexts';
 import { Button } from '@/components/ui';
 import { Spacing, FontSize } from '@/constants/Colors';
@@ -32,7 +33,7 @@ export default function OnboardingWelcome() {
           elevation: 10,
         }}
       >
-        <Text style={{ fontSize: 56 }}>🍽️</Text>
+        <Ionicons name="leaf" size={64} color="#FFFFFF" />
       </View>
 
       <Text style={{ fontSize: 36, fontWeight: '800', color: colors.text, marginBottom: 8 }}>

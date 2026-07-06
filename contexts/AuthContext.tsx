@@ -1,6 +1,4 @@
-// ==========================================
-// CONTEXT - AuthContext (v2.1 : vérif token au démarrage)
-// ==========================================
+// CONTEXT - AuthContext
 import React, { createContext, useCallback, useEffect, useReducer } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthState, User } from '@/types';
@@ -32,7 +30,13 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'LOGIN_SUCCESS':
-      return { ...state, user: action.payload.user, token: action.payload.token, isLoading: false };
+      return {
+        ...state,
+        user: action.payload.user,
+        token: action.payload.token,
+        isOnboarded: (action.payload.user as any).isOnboarded === true,
+        isLoading: false,
+      };
     case 'LOGOUT':
       return { ...initialState, isLoading: false };
     case 'RESTORE_SESSION':
@@ -103,9 +107,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const { user } = JSON.parse(storedAuth);
+        // Utiliser en priorité isOnboarded du backend (source de vérité)
+        const backendUser = (check as any).data;
+        const isOnboarded = backendUser?.isOnboarded ?? (storedOnboarded === 'true');
+        // Mettre à jour l'AsyncStorage si le backend a un statut différent
+        if (isOnboarded) {
+          await AsyncStorage.setItem(ONBOARD_STORAGE_KEY, 'true');
+        }
         dispatch({
           type: 'RESTORE_SESSION',
-          payload: { user, token: accessToken, isOnboarded: storedOnboarded === 'true' },
+          payload: { user: backendUser || user, token: accessToken, isOnboarded },
         });
       } catch {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -130,6 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.setToken(accessToken);
     api.setRefreshToken(refreshToken);
     await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user }));
+    if ((user as any).isOnboarded) {
+      await AsyncStorage.setItem(ONBOARD_STORAGE_KEY, 'true');
+    } else {
+      await AsyncStorage.removeItem(ONBOARD_STORAGE_KEY);
+    }
     dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token: accessToken } });
     return { success: true };
   }, []);
@@ -163,6 +179,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const completeOnboarding = useCallback(async () => {
+    // Sauvegarder côté backend (persiste entre déconnexions)
+    try {
+      await api.post('/auth/complete-onboarding');
+    } catch (e) {
+      console.warn('Failed to save onboarding status on backend', e);
+    }
+    // Sauvegarder aussi en local pour affichage rapide
     await AsyncStorage.setItem(ONBOARD_STORAGE_KEY, 'true');
     dispatch({ type: 'COMPLETE_ONBOARDING' });
   }, []);

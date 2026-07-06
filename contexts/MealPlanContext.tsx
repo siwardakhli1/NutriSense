@@ -1,6 +1,4 @@
-// ==========================================
-// CONTEXT - MealPlanContext (v2 : sans mock, backend obligatoire)
-// ==========================================
+// CONTEXT - MealPlanContext
 import React, { createContext, useCallback, useEffect, useReducer } from 'react';
 import {
   WeekPlan, ShoppingList, UserPreferences, Goal, DietaryPreference, Recipe,
@@ -111,11 +109,41 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
     }>('/meals/current');
 
     if (planRes.success && planRes.data) {
-      dispatch({ type: 'SET_PLAN', payload: planRes.data.weekPlan });
+      const plan = planRes.data.weekPlan;
+
+      // Détecter si le plan est expiré
+      const isExpired = plan && new Date(plan.endDate).getTime() < Date.now();
+
+      if (isExpired) {
+        // Plan expiré → régénération automatique silencieuse
+        console.log('[MealPlan] Plan expiré, régénération auto...');
+        try {
+          const regen = await api.post<{
+            weekPlan: WeekPlan;
+            shoppingList: ShoppingList;
+            recipes: Recipe[];
+          }>('/meals/generate', {
+            budget: state.preferences.budget || 100,
+            goal: state.preferences.goal || 'healthy',
+            dietary: state.preferences.dietary || [],
+            servings: state.preferences.servings || 2,
+          });
+          if (regen.success && regen.data) {
+            dispatch({ type: 'SET_PLAN', payload: regen.data.weekPlan });
+            dispatch({ type: 'SET_SHOPPING', payload: regen.data.shoppingList });
+            dispatch({ type: 'SET_RECIPES', payload: regen.data.recipes });
+            return;
+          }
+        } catch (e) {
+          console.warn('[MealPlan] Auto-régénération échouée', e);
+        }
+      }
+
+      dispatch({ type: 'SET_PLAN', payload: plan });
       dispatch({ type: 'SET_SHOPPING', payload: planRes.data.shoppingList });
       dispatch({ type: 'SET_RECIPES', payload: planRes.data.recipes });
     }
-  }, []);
+  }, [state.preferences]);
 
   useEffect(() => { loadCurrent(); }, [loadCurrent]);
 

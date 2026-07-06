@@ -1,5 +1,5 @@
 // ==========================================
-// SCREEN - Onboarding Budget
+// SCREEN - Onboarding Budget (étape 1/3)
 // ==========================================
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -7,8 +7,8 @@ import Slider from '@react-native-community/slider';
 import { useRouter } from 'expo-router';
 import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
 import { useVibration } from '@/hooks/useNativeAPIs';
-import { Button } from '@/components/ui';
-import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { Spacing, BorderRadius } from '@/constants/Colors';
 
 export default function OnboardingBudget() {
   const { colors } = useTheme();
@@ -17,91 +17,79 @@ export default function OnboardingBudget() {
   const { vibrate } = useVibration();
   const router = useRouter();
 
-  return (
-    <View style={{ flex: 1, padding: Spacing.lg, backgroundColor: colors.background }}>
-      {/* Header */}
-      <View style={{ paddingTop: 60, marginBottom: Spacing.lg }}>
-        <Text style={{ fontSize: FontSize.xl, fontWeight: '800', color: colors.text }}>
-          {t.onboarding.budgetTitle}
-        </Text>
-      </View>
+  const budget = preferences.budget || 100;
 
-      {/* Budget display */}
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+  return (
+    <OnboardingLayout
+      step={1}
+      totalSteps={3}
+      title="Ton budget hebdomadaire"
+      subtitle="Combien peux-tu dépenser en courses par semaine ?"
+      onNext={() => {
+        vibrate();
+        router.push('/(onboarding)/goal');
+      }}
+      nextLabel="Suivant"
+    >
+      <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
+        {/* Big budget display */}
         <View
           style={{
-            backgroundColor: colors.accentLight,
+            paddingVertical: 40,
+            paddingHorizontal: 60,
             borderRadius: BorderRadius.xl,
-            padding: 36,
+            backgroundColor: '#FEEED4',
             alignItems: 'center',
-            marginBottom: 40,
+            marginBottom: Spacing.xl,
             width: '100%',
-            shadowColor: colors.accent,
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.15,
-            shadowRadius: 20,
-            elevation: 5,
           }}
         >
-          <Text style={{ fontSize: FontSize.sm, fontWeight: '600', color: colors.textSecondary, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
-            {t.onboarding.budgetLabel}
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: '#8B6F47',
+              letterSpacing: 2,
+              marginBottom: 8,
+            }}
+          >
+            MON BUDGET
           </Text>
-          <Text style={{ fontSize: 64, fontWeight: '800', color: colors.accent }}>
-            {preferences.budget}€
+          <Text
+            style={{
+              fontSize: 56,
+              fontWeight: '900',
+              color: '#D2691E',
+              letterSpacing: -2,
+            }}
+          >
+            {budget}€
           </Text>
-          <Text style={{ fontSize: FontSize.sm, color: colors.textMuted }}>
-            {t.onboarding.budgetUnit}
+          <Text style={{ fontSize: 13, color: '#8B6F47', marginTop: 4 }}>
+            par semaine
           </Text>
         </View>
 
         {/* Slider */}
-        <View style={{ width: '100%', paddingHorizontal: 8 }}>
+        <View style={{ width: '100%' }}>
           <Slider
-            value={preferences.budget}
-            onValueChange={(val) => {
-              const rounded = Math.round(val);
-              if (rounded !== preferences.budget) {
-                vibrate(10);
-              }
-              updateBudget(rounded);
-            }}
+            style={{ width: '100%', height: 40 }}
             minimumValue={15}
             maximumValue={300}
             step={5}
-            minimumTrackTintColor={colors.accent}
+            value={budget}
+            onValueChange={(value) => updateBudget(Math.round(value))}
+            minimumTrackTintColor="#D2691E"
             maximumTrackTintColor={colors.border}
-            thumbTintColor={colors.accent}
-            style={{ width: '100%', height: 40 }}
+            thumbTintColor="#D2691E"
           />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>15€</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>150</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '600' }}>300</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>15€</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '700' }}>150€</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>300€</Text>
           </View>
         </View>
       </View>
-
-      {/* CTA */}
-      <Button
-        title={`${t.common.next} →`}
-        onPress={() => router.push('/(onboarding)/goal')}
-        style={{ marginBottom: Spacing.lg }}
-      />
-
-      {/* Progress dots */}
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', paddingBottom: Spacing.md }}>
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{
-              width: i === 1 ? 28 : 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: i === 1 ? colors.primary : colors.border,
-            }}
-          />
-        ))}
-      </View>
-    </View>
+    </OnboardingLayout>
   );
 }

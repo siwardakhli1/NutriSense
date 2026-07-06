@@ -85,7 +85,7 @@ export function CategoryHeader({ icon, title, checkedCount, totalCount, color }:
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 16 }}>{icon}</Text>
+        <Ionicons name={icon as any} size={18} color={color} />
       </View>
       <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }}>
         {title}

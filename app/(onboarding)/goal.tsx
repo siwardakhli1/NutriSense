@@ -1,21 +1,26 @@
 // ==========================================
-// SCREEN - Onboarding Goal
+// SCREEN - Onboarding Goal (étape 2/3)
 // ==========================================
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
 import { useVibration } from '@/hooks/useNativeAPIs';
-import { Button } from '@/components/ui';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
 import { Goal } from '@/types';
-import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
+import { BorderRadius } from '@/constants/Colors';
 
-const GOALS: { id: Goal; emoji: string; gradient: string }[] = [
-  { id: 'healthy', emoji: '🥗', gradient: '#A8E6CF' },
-  { id: 'fast', emoji: '⚡', gradient: '#FFD93D' },
-  { id: 'budget', emoji: '💰', gradient: '#6EC6FF' },
-  { id: 'muscle', emoji: '💪', gradient: '#FF8A80' },
+const GOALS: {
+  id: Goal;
+  icon: string;
+  gradient: string;
+  labelKey: keyof any;
+}[] = [
+  { id: 'healthy', icon: 'leaf-outline', gradient: '#A8E6CF', labelKey: 'healthy' },
+  { id: 'fast', icon: 'flash-outline', gradient: '#FFD93D', labelKey: 'fast' },
+  { id: 'budget', icon: 'wallet-outline', gradient: '#6EC6FF', labelKey: 'budget' },
+  { id: 'muscle', icon: 'barbell-outline', gradient: '#FF8A80', labelKey: 'muscle' },
 ];
 
 export default function OnboardingGoal() {
@@ -26,107 +31,88 @@ export default function OnboardingGoal() {
   const router = useRouter();
 
   const handleSelect = (goal: Goal) => {
-    vibrate(30);
+    vibrate();
     updateGoal(goal);
   };
 
   return (
-    <View style={{ flex: 1, padding: Spacing.lg, backgroundColor: colors.background }}>
-      {/* Header */}
-      <View style={{ paddingTop: 60, marginBottom: 8 }}>
-        <Text style={{ fontSize: FontSize.xl, fontWeight: '800', color: colors.text }}>
-          {t.onboarding.goalTitle}
-        </Text>
-      </View>
-      <Text style={{ fontSize: FontSize.sm, color: colors.textSecondary, marginBottom: Spacing.lg }}>
-        {t.onboarding.goalSubtitle}
-      </Text>
+    <OnboardingLayout
+      step={2}
+      totalSteps={3}
+      title="Ton objectif"
+      subtitle="Qu'est-ce qui compte le plus pour toi ?"
+      onNext={() => {
+        vibrate();
+        router.push('/(onboarding)/preferences');
+      }}
+      nextLabel="Suivant"
+      nextDisabled={!preferences.goal}
+    >
+      <View style={{ gap: 12 }}>
+        {GOALS.map((g) => {
+          const isSelected = preferences.goal === g.id;
+          const goalLabel = t.goals[g.id as keyof typeof t.goals] as string;
+          const descKey = `${g.id}Desc` as keyof typeof t.goals;
+          const goalDesc = t.goals[descKey] as string;
 
-      {/* Goals list */}
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ gap: 12 }}>
-          {GOALS.map((g) => {
-            const isSelected = preferences.goal === g.id;
-            const goalKey = g.id as keyof typeof t.goals;
-
-            return (
-              <TouchableOpacity
-                key={g.id}
-                activeOpacity={0.8}
-                onPress={() => handleSelect(g.id)}
+          return (
+            <TouchableOpacity
+              key={g.id}
+              activeOpacity={0.8}
+              onPress={() => handleSelect(g.id)}
+              accessible={true}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`Objectif ${goalLabel || g.id}`}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+                padding: 18,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: isSelected ? colors.primaryLight : colors.card,
+                borderWidth: 2,
+                borderColor: isSelected ? colors.primary : colors.border,
+              }}
+            >
+              <View
                 style={{
-                  flexDirection: 'row',
+                  width: 52,
+                  height: 52,
+                  borderRadius: 16,
+                  backgroundColor: g.gradient,
                   alignItems: 'center',
-                  gap: 16,
-                  padding: 18,
-                  borderRadius: BorderRadius.lg,
-                  backgroundColor: isSelected ? colors.primaryLight : colors.card,
-                  borderWidth: 2,
-                  borderColor: isSelected ? colors.primary : colors.border,
+                  justifyContent: 'center',
                 }}
               >
-                <View
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
-                    backgroundColor: g.gradient,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 26 }}>{g.emoji}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: '700', fontSize: 16, color: colors.text }}>
-                    {t.goals[goalKey]}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                    {t.goals[`${goalKey}Desc` as keyof typeof t.goals]}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 8,
-                    borderWidth: isSelected ? 0 : 2,
-                    borderColor: colors.border,
-                    backgroundColor: isSelected ? colors.primary : 'transparent',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      {/* CTA */}
-      <Button
-        title={`${t.common.next} →`}
-        onPress={() => router.push('/(onboarding)/preferences')}
-        disabled={!preferences.goal}
-        style={{ marginTop: Spacing.md, marginBottom: Spacing.lg }}
-      />
-
-      {/* Progress dots */}
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', paddingBottom: Spacing.md }}>
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{
-              width: i === 2 ? 28 : 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: i === 2 ? colors.primary : colors.border,
-            }}
-          />
-        ))}
+                <Ionicons name={g.icon as any} size={26} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+                  {goalLabel || g.id}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
+                  {goalDesc || ''}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: isSelected ? colors.primary : 'transparent',
+                  borderWidth: 2,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
-    </View>
+    </OnboardingLayout>
   );
 }

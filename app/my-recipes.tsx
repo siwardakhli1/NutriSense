@@ -1,6 +1,4 @@
-// ==========================================
 // SCREEN - Mes recettes personnelles
-// ==========================================
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -153,13 +151,12 @@ export default function MyRecipesScreen() {
                   activeOpacity={0.7}
                   style={{ flexDirection: 'row', alignItems: 'center' }}
                 >
-                  <Text style={{ fontSize: 40, marginRight: 14 }}>{recipe.emoji}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
                       {recipe.name}
                     </Text>
                     <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                      ⏱ {recipe.time} min · 👥 {recipe.servings} pers · 🔥 {recipe.nutrition?.calories || 0} kcal
+                      {recipe.time} min · {recipe.servings} pers · {recipe.nutrition?.calories || 0} kcal
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
                       {(recipe.tags || []).slice(0, 3).map((tag) => (

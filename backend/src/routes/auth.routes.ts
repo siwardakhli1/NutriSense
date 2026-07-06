@@ -39,7 +39,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
   await prisma.refreshToken.create({ data: { token: refreshToken, userId: id, expiresAt } });
 
   res.status(201).json({
-    user: { id, name, email, createdAt: new Date().toISOString() },
+    user: { id, name, email, isOnboarded: false, createdAt: new Date().toISOString() },
     accessToken,
     refreshToken,
   });
@@ -69,7 +69,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
   logger.security('LOGIN_SUCCESS', { userId: user.id, email, ip });
 
   res.json({
-    user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt.toISOString() },
+    user: { id: user.id, name: user.name, email: user.email, isOnboarded: user.isOnboarded, createdAt: user.createdAt.toISOString() },
     accessToken,
     refreshToken,
   });
@@ -108,9 +108,56 @@ router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response) =
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, name: true, email: true, createdAt: true },
+    select: { id: true, name: true, email: true, isOnboarded: true, createdAt: true },
   });
   if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
+  res.json({ ...user, createdAt: user.createdAt.toISOString() });
+});
+
+// Marquer l'onboarding comme terminé
+router.post('/complete-onboarding', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const user = await prisma.user.update({
+    where: { id: req.userId },
+    data: { isOnboarded: true },
+    select: { id: true, name: true, email: true, isOnboarded: true, createdAt: true },
+  });
+  logger.security('ONBOARDING_COMPLETED', { userId: req.userId, ip: req.ip });
+  res.json({ ...user, createdAt: user.createdAt.toISOString() });
+});
+
+// Modification du profil utilisateur (nom + email)
+router.put('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { name, email } = req.body;
+
+  const updates: any = {};
+  if (name && typeof name === 'string' && name.trim().length >= 2) {
+    updates.name = name.trim();
+  }
+  if (email && typeof email === 'string') {
+    const emailNormalized = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalized)) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: 'Email invalide' });
+    }
+    // Vérifier que l'email n'est pas déjà pris par un autre utilisateur
+    const existing = await prisma.user.findUnique({ where: { email: emailNormalized } });
+    if (existing && existing.id !== req.userId) {
+      return res.status(409).json({ error: 'EMAIL_TAKEN', message: 'Email déjà utilisé' });
+    }
+    updates.email = emailNormalized;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'NO_UPDATE', message: 'Aucune modification' });
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.userId },
+    data: updates,
+    select: { id: true, name: true, email: true, createdAt: true },
+  });
+
+  logger.security('PROFILE_UPDATED', { userId: req.userId, ip: req.ip, updates: Object.keys(updates) });
+
   res.json({ ...user, createdAt: user.createdAt.toISOString() });
 });
 

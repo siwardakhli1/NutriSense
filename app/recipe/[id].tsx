@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
+import { RecipeImage } from '@/components/RecipeImage';
 import { useShare } from '@/hooks/useShare';
 import { useVibration } from '@/hooks/useNativeAPIs';
 import { ErrorDisplay } from '@/components/ui';
@@ -91,7 +92,7 @@ export default function RecipeDetailScreen() {
             marginBottom: Spacing.lg,
           }}
         >
-          <Text style={{ fontSize: 64, marginBottom: 10 }}>{recipe.emoji}</Text>
+          <RecipeImage name={recipe.name} fallbackEmoji={recipe.emoji} style={{ fontSize: 64, marginBottom: 10 }} />
           <Text
             style={{
               fontSize: 22,
@@ -106,10 +107,10 @@ export default function RecipeDetailScreen() {
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
             {[
-              { icon: '🕐', text: `${recipe.time} min` },
-              { icon: '👤', text: `${recipe.servings} ${t.recipe.servings}` },
-              { icon: '🔥', text: `${recipe.nutrition.calories} kcal` },
-              { icon: '📊', text: recipe.difficulty === 'facile' ? t.recipe.easy : recipe.difficulty === 'moyen' ? t.recipe.medium : t.recipe.hard },
+              { icon: 'time-outline', text: `${recipe.time} min` },
+              { icon: 'people-outline', text: `${recipe.servings} ${t.recipe.servings}` },
+              { icon: 'flame-outline', text: `${recipe.nutrition.calories} kcal` },
+              { icon: 'stats-chart-outline', text: recipe.difficulty === 'facile' ? t.recipe.easy : recipe.difficulty === 'moyen' ? t.recipe.medium : t.recipe.hard },
             ].map((tag, i) => (
               <View
                 key={i}
@@ -118,10 +119,14 @@ export default function RecipeDetailScreen() {
                   paddingHorizontal: 12,
                   borderRadius: 50,
                   backgroundColor: colors.surfaceVariant,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
+                <Ionicons name={tag.icon as any} size={12} color={colors.textSecondary} />
                 <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
-                  {tag.icon} {tag.text}
+                  {tag.text}
                 </Text>
               </View>
             ))}

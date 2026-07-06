@@ -1,6 +1,4 @@
-// ==========================================
 // SCREEN - Mes préférences (modifier objectif, budget, régimes, portions)
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Alert,
@@ -15,19 +13,19 @@ import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
 
 const GOALS = [
-  { id: 'healthy', label: 'Healthy', emoji: '🥗', desc: 'Équilibré' },
-  { id: 'fast', label: 'Rapide', emoji: '⚡', desc: 'Repas < 20 min' },
-  { id: 'budget', label: 'Budget', emoji: '💰', desc: 'Économique' },
-  { id: 'muscle', label: 'Muscle', emoji: '💪', desc: 'Prise de masse' },
+  { id: 'healthy', label: 'Healthy', icon: 'leaf-outline', desc: 'Équilibré' },
+  { id: 'fast', label: 'Rapide', icon: 'flash-outline', desc: 'Repas < 20 min' },
+  { id: 'budget', label: 'Budget', icon: 'wallet-outline', desc: 'Économique' },
+  { id: 'muscle', label: 'Muscle', icon: 'barbell-outline', desc: 'Prise de masse' },
 ];
 
 const DIETARY_OPTIONS = [
-  { id: 'vegan', label: 'Vegan', emoji: '🌱' },
-  { id: 'vegetarian', label: 'Végétarien', emoji: '🥬' },
-  { id: 'halal', label: 'Halal', emoji: '☪️' },
-  { id: 'keto', label: 'Keto', emoji: '🥑' },
-  { id: 'sans_gluten', label: 'Sans gluten', emoji: '🌾' },
-  { id: 'sans_lactose', label: 'Sans lactose', emoji: '🥛' },
+  { id: 'vegan', label: 'Vegan', icon: 'leaf-outline' },
+  { id: 'vegetarian', label: 'Végétarien', icon: 'nutrition-outline' },
+  { id: 'halal', label: 'Halal', icon: 'moon-outline' },
+  { id: 'keto', label: 'Keto', icon: 'flame-outline' },
+  { id: 'sans_gluten', label: 'Sans gluten', icon: 'ban-outline' },
+  { id: 'sans_lactose', label: 'Sans lactose', icon: 'water-outline' },
 ];
 
 const SERVINGS_OPTIONS = [1, 2, 3, 4, 6];
@@ -136,9 +134,12 @@ export default function PreferencesScreen() {
         <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
 
           {/* Objectif */}
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 10 }}>
-            🎯 Mon objectif
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <Ionicons name="flag-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+              Mon objectif
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {GOALS.map((g) => {
               const isSelected = goal === g.id;
@@ -156,7 +157,7 @@ export default function PreferencesScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 24 }}>{g.emoji}</Text>
+                  <Ionicons name={g.icon as any} size={26} color={isSelected ? '#fff' : colors.primary} />
                   <Text style={{
                     fontWeight: '700', marginTop: 4,
                     color: isSelected ? '#fff' : colors.text,
@@ -228,9 +229,12 @@ export default function PreferencesScreen() {
           </Card>
 
           {/* Régimes alimentaires */}
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 }}>
-            🥗 Régimes alimentaires
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Ionicons name="leaf-outline" size={18} color={colors.text} />
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
+              Régimes alimentaires
+            </Text>
+          </View>
           <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>
             Sélectionne ceux qui te concernent (plusieurs possibles)
           </Text>
@@ -249,7 +253,7 @@ export default function PreferencesScreen() {
                     borderColor: isSelected ? colors.primary : colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 22, marginRight: 12 }}>{d.emoji}</Text>
+                  <Ionicons name={d.icon as any} size={22} color={isSelected ? '#fff' : colors.primary} style={{ marginRight: 12 }} />
                   <Text style={{
                     flex: 1, fontWeight: '600', fontSize: 15,
                     color: isSelected ? colors.primary : colors.text,

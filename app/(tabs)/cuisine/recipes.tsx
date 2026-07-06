@@ -28,27 +28,24 @@ export default function RecipesScreen() {
       accessibilityLabel={`Recette ${item.name}, ${item.time} minutes, ${item.nutrition.calories} calories, ${item.servings} personnes`}
       accessibilityHint="Ouvre les détails de la recette"
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        <View
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 18,
-            backgroundColor: colors.primaryLight,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 32 }}>{item.emoji}</Text>
-        </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
             {item.name}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>🕐 {item.time} min</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>🔥 {item.nutrition.calories} kcal</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>👤 {item.servings}</Text>
+          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>{item.time} min</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="flame-outline" size={12} color={colors.textMuted} />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>{item.nutrition.calories} kcal</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="people-outline" size={12} color={colors.textMuted} />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>{item.servings}</Text>
+            </View>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -61,7 +58,7 @@ export default function RecipesScreen() {
       <View style={{ padding: Spacing.lg, paddingBottom: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md }}>
           <Text style={{ fontSize: FontSize.xl, fontWeight: '800', color: colors.text }}>
-            {t.tabs.recipes} 📖
+            {t.tabs.recipes}
           </Text>
           <View style={{ flexDirection: 'row', gap: 6 }}>
             <TouchableOpacity

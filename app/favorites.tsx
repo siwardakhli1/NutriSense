@@ -1,6 +1,4 @@
-// ==========================================
 // SCREEN - Mes recettes favorites
-// ==========================================
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -61,7 +59,7 @@ export default function FavoritesScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Mes recettes favorites ❤️',
+          title: 'Mes recettes favorites',
           headerShown: true,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
@@ -80,7 +78,7 @@ export default function FavoritesScreen() {
                 Aucun favori pour l'instant
               </Text>
               <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }}>
-                Tap sur le cœur ❤️ d'une recette pour l'ajouter à tes favoris.
+                Tap sur le cœur d'une recette pour l'ajouter à tes favoris.
               </Text>
             </View>
           ) : (
@@ -91,13 +89,12 @@ export default function FavoritesScreen() {
                   activeOpacity={0.7}
                   style={{ flexDirection: 'row', alignItems: 'center' }}
                 >
-                  <Text style={{ fontSize: 40, marginRight: 14 }}>{recipe.emoji}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
                       {recipe.name}
                     </Text>
                     <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                      ⏱ {recipe.time} min · 👥 {recipe.servings} pers · 🔥 {recipe.nutrition?.calories || 0} kcal
+                      {recipe.time} min · {recipe.servings} pers · {recipe.nutrition?.calories || 0} kcal
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
                       {(recipe.tags || []).slice(0, 3).map((tag) => (

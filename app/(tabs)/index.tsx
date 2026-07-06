@@ -141,18 +141,22 @@ export default function PlanScreen() {
         <View style={{ padding: Spacing.lg, paddingTop: Spacing.lg }}>
           {lunchMeal && (
             <MealCard
+              key={`lunch-${dayPlan?.date}`}
               label={t.plan.lunch}
               labelIcon="☀️"
               meal={lunchMeal}
+              date={dayPlan?.date}
               onPress={() => router.push(`/recipe/${lunchMeal.recipe.id}`)}
             />
           )}
 
           {dinnerMeal && (
             <MealCard
+              key={`dinner-${dayPlan?.date}`}
               label={t.plan.dinner}
               labelIcon="🌙"
               meal={dinnerMeal}
+              date={dayPlan?.date}
               onPress={() => router.push(`/recipe/${dinnerMeal.recipe.id}`)}
             />
           )}

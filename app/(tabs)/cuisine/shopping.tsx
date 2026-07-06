@@ -12,12 +12,12 @@ import { IngredientCategory, ShoppingItem as ShoppingItemType } from '@/types';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 
 const CATEGORY_META: Record<IngredientCategory, { icon: string; color: string }> = {
-  fruits_legumes: { icon: '🥬', color: '#A8E6CF' },
-  feculents: { icon: '🌾', color: '#FFD93D' },
-  proteines: { icon: '🥩', color: '#FF8A80' },
-  epicerie: { icon: '🧴', color: '#6EC6FF' },
-  produits_laitiers: { icon: '🧀', color: '#DDA0DD' },
-  autres: { icon: '📦', color: '#C0C0C0' },
+  fruits_legumes: { icon: 'nutrition-outline', color: '#A8E6CF' },
+  feculents: { icon: 'restaurant-outline', color: '#FFD93D' },
+  proteines: { icon: 'fish-outline', color: '#FF8A80' },
+  epicerie: { icon: 'cube-outline', color: '#6EC6FF' },
+  produits_laitiers: { icon: 'water-outline', color: '#DDA0DD' },
+  autres: { icon: 'basket-outline', color: '#C0C0C0' },
 };
 
 export default function ShoppingScreen() {

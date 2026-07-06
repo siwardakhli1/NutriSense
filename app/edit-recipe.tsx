@@ -1,6 +1,4 @@
-// ==========================================
 // SCREEN - Créer / modifier une recette perso
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
@@ -15,19 +13,19 @@ import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
 
 const AVAILABLE_TAGS = [
-  { id: 'breakfast', label: '🥣 Petit-déj' },
-  { id: 'lunch', label: '🍱 Déjeuner' },
-  { id: 'dinner', label: '🍽️ Dîner' },
-  { id: 'vegan', label: '🌱 Vegan' },
-  { id: 'vegetarian', label: '🥬 Végé' },
-  { id: 'halal', label: '☪️ Halal' },
-  { id: 'keto', label: '🥑 Keto' },
-  { id: 'sans_gluten', label: '🌾 Sans gluten' },
-  { id: 'sans_lactose', label: '🥛 Sans lactose' },
-  { id: 'healthy', label: '❤️ Healthy' },
-  { id: 'fast', label: '⚡ Rapide' },
-  { id: 'budget', label: '💰 Budget' },
-  { id: 'muscle', label: '💪 Muscle' },
+  { id: 'breakfast', label: 'Petit-déj' },
+  { id: 'lunch', label: 'Déjeuner' },
+  { id: 'dinner', label: 'Dîner' },
+  { id: 'vegan', label: 'Vegan' },
+  { id: 'vegetarian', label: 'Végé' },
+  { id: 'halal', label: 'Halal' },
+  { id: 'keto', label: 'Keto' },
+  { id: 'sans_gluten', label: 'Sans gluten' },
+  { id: 'sans_lactose', label: 'Sans lactose' },
+  { id: 'healthy', label: 'Healthy' },
+  { id: 'fast', label: 'Rapide' },
+  { id: 'budget', label: 'Budget' },
+  { id: 'muscle', label: 'Muscle' },
 ];
 
 interface Ingredient {
@@ -45,7 +43,6 @@ export default function EditRecipeScreen() {
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState('');
-  const [emoji, setEmoji] = useState('🍽️');
   const [timeMinutes, setTimeMinutes] = useState('20');
   const [servings, setServings] = useState('2');
   const [difficulty, setDifficulty] = useState('facile');
@@ -63,7 +60,6 @@ export default function EditRecipeScreen() {
       const res = await api.get<any>(`/recipes/${params.id}`);
       if (res.success && res.data) {
         setName(res.data.name);
-        setEmoji(res.data.emoji || '🍽️');
         setTimeMinutes(String(res.data.time || 20));
         setServings(String(res.data.servings || 2));
         setDifficulty(res.data.difficulty || 'facile');
@@ -118,7 +114,6 @@ export default function EditRecipeScreen() {
     setSaving(true);
     const payload = {
       name: name.trim(),
-      emoji,
       timeMinutes: Number(timeMinutes) || 20,
       servings: Number(servings) || 2,
       difficulty,
@@ -146,7 +141,7 @@ export default function EditRecipeScreen() {
     setSaving(false);
 
     if (res.success) {
-      Alert.alert('✅', isEdit ? 'Recette modifiée' : 'Recette créée', [
+      Alert.alert('OK', isEdit ? 'Recette modifiée' : 'Recette créée', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } else {
@@ -180,19 +175,8 @@ export default function EditRecipeScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
           <ScrollView contentContainerStyle={{ padding: Spacing.lg }}>
 
-            {/* Emoji + Nom */}
+            {/* Nom */}
             <Card style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>Emoji</Text>
-              <TextInput
-                value={emoji}
-                onChangeText={setEmoji}
-                style={{
-                  fontSize: 40, textAlign: 'center',
-                  backgroundColor: colors.surfaceVariant,
-                  borderRadius: BorderRadius.md, padding: 8, marginBottom: 12,
-                }}
-                maxLength={2}
-              />
               <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>Nom de la recette *</Text>
               <TextInput
                 value={name}

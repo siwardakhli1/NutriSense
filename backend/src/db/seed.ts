@@ -1,5 +1,5 @@
 // ==========================================
-// DB - Seeding recettes (v4 : 60 recettes, cuisine du monde)
+// DB - Seeding recettes
 // Couverture : vegan / vegetarian / halal / keto / sans_gluten / sans_lactose
 // Types : breakfast / lunch / dinner
 // Objectifs : healthy / fast / budget / muscle
@@ -10,13 +10,13 @@ export async function seedRecipes(): Promise<void> {
   const count = await prisma.recipe.count();
   if (count > 0) return;
 
-  console.log('🌱 Seeding recipes (60 recettes du monde)...');
+  console.log('Seeding recipes (60 recettes du monde)...');
 
   const recipes = [
     // ============================================
     // 🥣 PETITS-DÉJEUNERS (12)
     // ============================================
-    { id: 'b01', name: "Bowl d'avoine banane cannelle", emoji: '🥣', timeMinutes: 7, servings: 1, difficulty: 'facile',
+    { id: 'b01', name: "Bowl d'avoine banane cannelle", emoji: null, timeMinutes: 7, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b01_1', name: 'Flocons avoine', quantity: '60', unit: 'g', category: 'feculents' },
         { id: 'b01_2', name: 'Lait végétal', quantity: '200', unit: 'ml', category: 'produits_laitiers' },
@@ -26,7 +26,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 340, protein: 10, carbs: 62, fat: 6, fiber: 8 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'healthy', 'budget', 'fast', 'breakfast'] },
 
-    { id: 'b02', name: 'Omelette champignons fromage', emoji: '🍳', timeMinutes: 10, servings: 1, difficulty: 'facile',
+    { id: 'b02', name: 'Omelette champignons fromage', emoji: null, timeMinutes: 10, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b02_1', name: 'Œufs', quantity: '3', unit: 'pièces', category: 'proteines' },
         { id: 'b02_2', name: 'Champignons', quantity: '100', unit: 'g', category: 'fruits_legumes' },
@@ -35,7 +35,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 350, protein: 26, carbs: 4, fat: 25, fiber: 2 },
       tags: ['vegetarian', 'halal', 'keto', 'sans_gluten', 'healthy', 'muscle', 'fast', 'breakfast'] },
 
-    { id: 'b03', name: 'Yaourt grec granola miel', emoji: '🥄', timeMinutes: 3, servings: 1, difficulty: 'facile',
+    { id: 'b03', name: 'Yaourt grec granola miel', emoji: null, timeMinutes: 3, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b03_1', name: 'Yaourt grec', quantity: '200', unit: 'g', category: 'produits_laitiers' },
         { id: 'b03_2', name: 'Granola', quantity: '40', unit: 'g', category: 'epicerie' },
@@ -45,7 +45,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 18, carbs: 52, fat: 10, fiber: 5 },
       tags: ['vegetarian', 'halal', 'healthy', 'muscle', 'fast', 'breakfast'] },
 
-    { id: 'b04', name: 'Toast avocat œuf poché', emoji: '🥑', timeMinutes: 10, servings: 1, difficulty: 'facile',
+    { id: 'b04', name: 'Toast avocat œuf poché', emoji: null, timeMinutes: 10, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b04_1', name: 'Pain complet', quantity: '2', unit: 'tranches', category: 'feculents' },
         { id: 'b04_2', name: 'Avocat', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
@@ -54,7 +54,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 18, carbs: 34, fat: 24, fiber: 10 },
       tags: ['vegetarian', 'halal', 'sans_lactose', 'healthy', 'fast', 'breakfast'] },
 
-    { id: 'b05', name: 'Smoothie bowl mangue coco', emoji: '🥭', timeMinutes: 5, servings: 1, difficulty: 'facile',
+    { id: 'b05', name: 'Smoothie bowl mangue coco', emoji: null, timeMinutes: 5, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b05_1', name: 'Mangue surgelée', quantity: '200', unit: 'g', category: 'fruits_legumes' },
         { id: 'b05_2', name: 'Lait de coco', quantity: '100', unit: 'ml', category: 'epicerie' },
@@ -63,7 +63,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 310, protein: 6, carbs: 42, fat: 14, fiber: 9 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'fast', 'breakfast'] },
 
-    { id: 'b06', name: 'Pancakes protéinés banane', emoji: '🥞', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'b06', name: 'Pancakes protéinés banane', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'b06_1', name: 'Flocons avoine mixés', quantity: '80', unit: 'g', category: 'feculents' },
         { id: 'b06_2', name: 'Banane', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
@@ -72,7 +72,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 20, carbs: 52, fat: 10, fiber: 6 },
       tags: ['vegetarian', 'halal', 'healthy', 'muscle', 'budget', 'breakfast'] },
 
-    { id: 'b07', name: 'Tartine beurre cacahuète banane', emoji: '🍞', timeMinutes: 5, servings: 1, difficulty: 'facile',
+    { id: 'b07', name: 'Tartine beurre cacahuète banane', emoji: null, timeMinutes: 5, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b07_1', name: 'Pain complet', quantity: '2', unit: 'tranches', category: 'feculents' },
         { id: 'b07_2', name: 'Beurre de cacahuète', quantity: '30', unit: 'g', category: 'epicerie' },
@@ -81,7 +81,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 14, carbs: 58, fat: 20, fiber: 8 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'budget', 'fast', 'breakfast'] },
 
-    { id: 'b08', name: 'Chia pudding coco fruits rouges', emoji: '🫐', timeMinutes: 10, servings: 1, difficulty: 'facile',
+    { id: 'b08', name: 'Chia pudding coco fruits rouges', emoji: null, timeMinutes: 10, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b08_1', name: 'Graines de chia', quantity: '30', unit: 'g', category: 'epicerie' },
         { id: 'b08_2', name: 'Lait de coco', quantity: '150', unit: 'ml', category: 'epicerie' },
@@ -90,7 +90,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 320, protein: 8, carbs: 28, fat: 20, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'breakfast'] },
 
-    { id: 'b09', name: 'Œufs brouillés avocat feta', emoji: '🍳', timeMinutes: 8, servings: 1, difficulty: 'facile',
+    { id: 'b09', name: 'Œufs brouillés avocat feta', emoji: null, timeMinutes: 8, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b09_1', name: 'Œufs', quantity: '3', unit: 'pièces', category: 'proteines' },
         { id: 'b09_2', name: 'Avocat', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
@@ -99,7 +99,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 26, carbs: 8, fat: 38, fiber: 6 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'keto', 'healthy', 'muscle', 'fast', 'breakfast'] },
 
-    { id: 'b10', name: 'Bircher muesli aux pommes', emoji: '🍎', timeMinutes: 8, servings: 1, difficulty: 'facile',
+    { id: 'b10', name: 'Bircher muesli aux pommes', emoji: null, timeMinutes: 8, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b10_1', name: 'Flocons avoine', quantity: '50', unit: 'g', category: 'feculents' },
         { id: 'b10_2', name: 'Yaourt', quantity: '100', unit: 'g', category: 'produits_laitiers' },
@@ -109,7 +109,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 360, protein: 12, carbs: 52, fat: 12, fiber: 8 },
       tags: ['vegetarian', 'halal', 'healthy', 'breakfast'] },
 
-    { id: 'b11', name: 'Porridge riz coco mangue', emoji: '🥥', timeMinutes: 15, servings: 1, difficulty: 'facile',
+    { id: 'b11', name: 'Porridge riz coco mangue', emoji: null, timeMinutes: 15, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b11_1', name: 'Riz basmati', quantity: '50', unit: 'g', category: 'feculents' },
         { id: 'b11_2', name: 'Lait de coco', quantity: '250', unit: 'ml', category: 'epicerie' },
@@ -118,7 +118,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 6, carbs: 54, fat: 16, fiber: 4 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'budget', 'breakfast'] },
 
-    { id: 'b12', name: 'Fromage blanc noix miel', emoji: '🥛', timeMinutes: 3, servings: 1, difficulty: 'facile',
+    { id: 'b12', name: 'Fromage blanc noix miel', emoji: null, timeMinutes: 3, servings: 1, difficulty: 'facile',
       ingredients: [
         { id: 'b12_1', name: 'Fromage blanc 0%', quantity: '200', unit: 'g', category: 'produits_laitiers' },
         { id: 'b12_2', name: 'Noix', quantity: '20', unit: 'g', category: 'epicerie' },
@@ -130,7 +130,7 @@ export async function seedRecipes(): Promise<void> {
     // ============================================
     // 🍱 DÉJEUNERS (25)
     // ============================================
-    { id: 'l01', name: 'Bowl quinoa légumes grillés', emoji: '🥗', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'l01', name: 'Bowl quinoa légumes grillés', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l01_1', name: 'Quinoa', quantity: '200', unit: 'g', category: 'feculents' },
         { id: 'l01_2', name: 'Avocat', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
@@ -140,7 +140,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 18, carbs: 62, fat: 16, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l02', name: 'Buddha bowl saumon avocat', emoji: '🐟', timeMinutes: 25, servings: 2, difficulty: 'facile',
+    { id: 'l02', name: 'Buddha bowl saumon avocat', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l02_1', name: 'Filet de saumon', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l02_2', name: 'Riz complet', quantity: '150', unit: 'g', category: 'feculents' },
@@ -150,7 +150,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 580, protein: 42, carbs: 48, fat: 22, fiber: 8 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'muscle', 'lunch'] },
 
-    { id: 'l03', name: 'Salade grecque feta olives', emoji: '🇬🇷', timeMinutes: 12, servings: 2, difficulty: 'facile',
+    { id: 'l03', name: 'Salade grecque feta olives', emoji: null, timeMinutes: 12, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l03_1', name: 'Concombre', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
         { id: 'l03_2', name: 'Tomates', quantity: '3', unit: 'pièces', category: 'fruits_legumes' },
@@ -160,7 +160,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 390, protein: 14, carbs: 18, fat: 28, fiber: 5 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'keto', 'healthy', 'fast', 'lunch'] },
 
-    { id: 'l04', name: 'Salade thon riz œuf', emoji: '🥗', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'l04', name: 'Salade thon riz œuf', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l04_1', name: 'Thon en boîte', quantity: '200', unit: 'g', category: 'proteines' },
         { id: 'l04_2', name: 'Riz basmati', quantity: '150', unit: 'g', category: 'feculents' },
@@ -170,7 +170,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 38, carbs: 52, fat: 12, fiber: 3 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'fast', 'muscle', 'lunch'] },
 
-    { id: 'l05', name: 'Poke bowl saumon mangue', emoji: '🍣', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'l05', name: 'Poke bowl saumon mangue', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l05_1', name: 'Saumon frais', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l05_2', name: 'Riz sushi', quantity: '150', unit: 'g', category: 'feculents' },
@@ -180,7 +180,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 620, protein: 38, carbs: 62, fat: 22, fiber: 8 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'muscle', 'lunch'] },
 
-    { id: 'l06', name: 'Salade quinoa légumineuses', emoji: '🥬', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'l06', name: 'Salade quinoa légumineuses', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l06_1', name: 'Quinoa', quantity: '150', unit: 'g', category: 'feculents' },
         { id: 'l06_2', name: 'Lentilles cuites', quantity: '150', unit: 'g', category: 'proteines' },
@@ -190,7 +190,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 22, carbs: 62, fat: 8, fiber: 14 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'muscle', 'lunch'] },
 
-    { id: 'l07', name: 'Taboulé libanais', emoji: '🌿', timeMinutes: 15, servings: 3, difficulty: 'facile',
+    { id: 'l07', name: 'Taboulé libanais', emoji: null, timeMinutes: 15, servings: 3, difficulty: 'facile',
       ingredients: [
         { id: 'l07_1', name: 'Boulghour fin', quantity: '100', unit: 'g', category: 'feculents' },
         { id: 'l07_2', name: 'Persil plat', quantity: '2', unit: 'bouquets', category: 'fruits_legumes' },
@@ -200,7 +200,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 280, protein: 8, carbs: 42, fat: 10, fiber: 6 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'budget', 'fast', 'healthy', 'lunch'] },
 
-    { id: 'l08', name: 'Salade thaï bœuf grillé', emoji: '🇹🇭', timeMinutes: 20, servings: 2, difficulty: 'moyen',
+    { id: 'l08', name: 'Salade thaï bœuf grillé', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'l08_1', name: 'Bœuf émincé', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l08_2', name: 'Salade', quantity: '100', unit: 'g', category: 'fruits_legumes' },
@@ -210,7 +210,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 38, carbs: 12, fat: 20, fiber: 4 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'keto', 'healthy', 'muscle', 'lunch'] },
 
-    { id: 'l09', name: 'Curry pois chiches épinards', emoji: '🇮🇳', timeMinutes: 25, servings: 3, difficulty: 'moyen',
+    { id: 'l09', name: 'Curry pois chiches épinards', emoji: null, timeMinutes: 25, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'l09_1', name: 'Pois chiches', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'l09_2', name: 'Lait de coco', quantity: '400', unit: 'ml', category: 'epicerie' },
@@ -220,7 +220,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 20, carbs: 55, fat: 14, fiber: 11 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l10', name: 'Soupe lentilles corail coco', emoji: '🍲', timeMinutes: 25, servings: 3, difficulty: 'facile',
+    { id: 'l10', name: 'Soupe lentilles corail coco', emoji: null, timeMinutes: 25, servings: 3, difficulty: 'facile',
       ingredients: [
         { id: 'l10_1', name: 'Lentilles corail', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l10_2', name: 'Lait de coco', quantity: '200', unit: 'ml', category: 'epicerie' },
@@ -230,7 +230,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 22, carbs: 48, fat: 10, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l11', name: 'Chili sin carne', emoji: '🌶️', timeMinutes: 35, servings: 4, difficulty: 'facile',
+    { id: 'l11', name: 'Chili sin carne', emoji: null, timeMinutes: 35, servings: 4, difficulty: 'facile',
       ingredients: [
         { id: 'l11_1', name: 'Haricots rouges', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'l11_2', name: 'Tomates concassées', quantity: '400', unit: 'g', category: 'fruits_legumes' },
@@ -240,7 +240,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 340, protein: 18, carbs: 52, fat: 6, fiber: 15 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l12', name: 'Spaghetti pesto tomates cerises', emoji: '🍝', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'l12', name: 'Spaghetti pesto tomates cerises', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l12_1', name: 'Spaghetti', quantity: '250', unit: 'g', category: 'feculents' },
         { id: 'l12_2', name: 'Pesto', quantity: '4', unit: 'c.à.s', category: 'epicerie' },
@@ -250,7 +250,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 18, carbs: 62, fat: 16, fiber: 5 },
       tags: ['vegetarian', 'halal', 'fast', 'budget', 'lunch'] },
 
-    { id: 'l13', name: 'Risotto champignons parmesan', emoji: '🇮🇹', timeMinutes: 30, servings: 2, difficulty: 'moyen',
+    { id: 'l13', name: 'Risotto champignons parmesan', emoji: null, timeMinutes: 30, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'l13_1', name: 'Riz arborio', quantity: '200', unit: 'g', category: 'feculents' },
         { id: 'l13_2', name: 'Champignons', quantity: '250', unit: 'g', category: 'fruits_legumes' },
@@ -260,7 +260,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 18, carbs: 78, fat: 14, fiber: 4 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'lunch'] },
 
-    { id: 'l14', name: 'Wok tofu légumes croquants', emoji: '🥢', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'l14', name: 'Wok tofu légumes croquants', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l14_1', name: 'Tofu ferme', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l14_2', name: 'Brocolis', quantity: '200', unit: 'g', category: 'fruits_legumes' },
@@ -270,7 +270,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 24, carbs: 22, fat: 20, fiber: 8 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'healthy', 'muscle', 'lunch'] },
 
-    { id: 'l15', name: 'Wrap poulet avocat', emoji: '🌯', timeMinutes: 10, servings: 2, difficulty: 'facile',
+    { id: 'l15', name: 'Wrap poulet avocat', emoji: null, timeMinutes: 10, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l15_1', name: 'Tortillas', quantity: '2', unit: 'pièces', category: 'feculents' },
         { id: 'l15_2', name: 'Poulet cuit', quantity: '200', unit: 'g', category: 'proteines' },
@@ -280,7 +280,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 510, protein: 35, carbs: 40, fat: 22, fiber: 6 },
       tags: ['halal', 'fast', 'muscle', 'lunch'] },
 
-    { id: 'l16', name: 'Falafels salade tahini', emoji: '🧆', timeMinutes: 25, servings: 3, difficulty: 'moyen',
+    { id: 'l16', name: 'Falafels salade tahini', emoji: null, timeMinutes: 25, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'l16_1', name: 'Pois chiches', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'l16_2', name: 'Persil', quantity: '1', unit: 'bouquet', category: 'fruits_legumes' },
@@ -290,7 +290,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 20, carbs: 48, fat: 22, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'budget', 'lunch'] },
 
-    { id: 'l17', name: 'Dahl lentilles jaunes', emoji: '🍛', timeMinutes: 25, servings: 3, difficulty: 'facile',
+    { id: 'l17', name: 'Dahl lentilles jaunes', emoji: null, timeMinutes: 25, servings: 3, difficulty: 'facile',
       ingredients: [
         { id: 'l17_1', name: 'Lentilles jaunes', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l17_2', name: 'Tomates', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
@@ -300,7 +300,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 360, protein: 22, carbs: 52, fat: 4, fiber: 14 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l18', name: 'Nouilles udon miso légumes', emoji: '🍜', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'l18', name: 'Nouilles udon miso légumes', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l18_1', name: 'Nouilles udon', quantity: '250', unit: 'g', category: 'feculents' },
         { id: 'l18_2', name: 'Miso', quantity: '2', unit: 'c.à.s', category: 'epicerie' },
@@ -310,7 +310,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 14, carbs: 72, fat: 6, fiber: 6 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'budget', 'lunch'] },
 
-    { id: 'l19', name: 'Enchiladas haricots noirs', emoji: '🇲🇽', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'l19', name: 'Enchiladas haricots noirs', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'l19_1', name: 'Tortillas maïs', quantity: '6', unit: 'pièces', category: 'feculents' },
         { id: 'l19_2', name: 'Haricots noirs', quantity: '400', unit: 'g', category: 'proteines' },
@@ -320,7 +320,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 490, protein: 22, carbs: 62, fat: 16, fiber: 12 },
       tags: ['vegetarian', 'halal', 'budget', 'lunch'] },
 
-    { id: 'l20', name: 'Tortilla espagnole pommes de terre', emoji: '🇪🇸', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'l20', name: 'Tortilla espagnole pommes de terre', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'l20_1', name: 'Œufs', quantity: '6', unit: 'pièces', category: 'proteines' },
         { id: 'l20_2', name: 'Pommes de terre', quantity: '400', unit: 'g', category: 'fruits_legumes' },
@@ -329,7 +329,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 20, carbs: 32, fat: 18, fiber: 4 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'budget', 'lunch'] },
 
-    { id: 'l21', name: 'Couscous légumes pois chiches', emoji: '🇲🇦', timeMinutes: 35, servings: 4, difficulty: 'moyen',
+    { id: 'l21', name: 'Couscous légumes pois chiches', emoji: null, timeMinutes: 35, servings: 4, difficulty: 'moyen',
       ingredients: [
         { id: 'l21_1', name: 'Semoule', quantity: '300', unit: 'g', category: 'feculents' },
         { id: 'l21_2', name: 'Pois chiches', quantity: '250', unit: 'g', category: 'proteines' },
@@ -339,7 +339,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 18, carbs: 82, fat: 6, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'budget', 'lunch'] },
 
-    { id: 'l22', name: 'Bo bun poulet vietnamien', emoji: '🇻🇳', timeMinutes: 25, servings: 2, difficulty: 'moyen',
+    { id: 'l22', name: 'Bo bun poulet vietnamien', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'l22_1', name: 'Vermicelles de riz', quantity: '150', unit: 'g', category: 'feculents' },
         { id: 'l22_2', name: 'Poulet', quantity: '250', unit: 'g', category: 'proteines' },
@@ -349,7 +349,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 38, carbs: 55, fat: 10, fiber: 4 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'muscle', 'lunch'] },
 
-    { id: 'l23', name: 'Salade lentilles feta grenade', emoji: '🥗', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'l23', name: 'Salade lentilles feta grenade', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l23_1', name: 'Lentilles vertes cuites', quantity: '200', unit: 'g', category: 'proteines' },
         { id: 'l23_2', name: 'Feta', quantity: '80', unit: 'g', category: 'produits_laitiers' },
@@ -359,7 +359,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 22, carbs: 42, fat: 14, fiber: 12 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'healthy', 'fast', 'lunch'] },
 
-    { id: 'l24', name: 'Ratatouille provençale', emoji: '🍅', timeMinutes: 40, servings: 4, difficulty: 'facile',
+    { id: 'l24', name: 'Ratatouille provençale', emoji: null, timeMinutes: 40, servings: 4, difficulty: 'facile',
       ingredients: [
         { id: 'l24_1', name: 'Aubergine', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
         { id: 'l24_2', name: 'Courgettes', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
@@ -369,7 +369,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 220, protein: 6, carbs: 32, fat: 8, fiber: 10 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'lunch'] },
 
-    { id: 'l25', name: 'Salade poulet grillé césar', emoji: '🥗', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'l25', name: 'Salade poulet grillé césar', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'l25_1', name: 'Blanc de poulet', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'l25_2', name: 'Salade romaine', quantity: '150', unit: 'g', category: 'fruits_legumes' },
@@ -381,7 +381,7 @@ export async function seedRecipes(): Promise<void> {
     // ============================================
     // 🍽️ DÎNERS (23)
     // ============================================
-    { id: 'd01', name: 'Saumon vapeur légumes citron', emoji: '🐟', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'd01', name: 'Saumon vapeur légumes citron', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd01_1', name: 'Filet de saumon', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd01_2', name: 'Courgettes', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
@@ -391,7 +391,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 42, carbs: 10, fat: 20, fiber: 4 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'keto', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd02', name: 'Cabillaud rôti aux herbes', emoji: '🐠', timeMinutes: 25, servings: 2, difficulty: 'facile',
+    { id: 'd02', name: 'Cabillaud rôti aux herbes', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd02_1', name: 'Filet de cabillaud', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd02_2', name: 'Patates douces', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
@@ -400,7 +400,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 340, protein: 34, carbs: 32, fat: 6, fiber: 5 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd03', name: 'Boulettes agneau menthe riz', emoji: '🍖', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'd03', name: 'Boulettes agneau menthe riz', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd03_1', name: 'Agneau haché', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'd03_2', name: 'Menthe fraîche', quantity: '1', unit: 'bouquet', category: 'fruits_legumes' },
@@ -410,7 +410,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 620, protein: 42, carbs: 55, fat: 26, fiber: 3 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd04', name: 'Poulet tikka masala', emoji: '🇮🇳', timeMinutes: 35, servings: 3, difficulty: 'moyen',
+    { id: 'd04', name: 'Poulet tikka masala', emoji: null, timeMinutes: 35, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd04_1', name: 'Poulet', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'd04_2', name: 'Yaourt', quantity: '200', unit: 'g', category: 'produits_laitiers' },
@@ -420,7 +420,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 42, carbs: 18, fat: 24, fiber: 4 },
       tags: ['halal', 'sans_gluten', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd05', name: 'Kebab poulet libanais', emoji: '🇱🇧', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'd05', name: 'Kebab poulet libanais', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd05_1', name: 'Poulet en cubes', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'd05_2', name: 'Pain pita', quantity: '3', unit: 'pièces', category: 'feculents' },
@@ -430,7 +430,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 42, carbs: 42, fat: 18, fiber: 4 },
       tags: ['halal', 'muscle', 'dinner'] },
 
-    { id: 'd06', name: 'Tajine poulet olives citron', emoji: '🇲🇦', timeMinutes: 40, servings: 3, difficulty: 'moyen',
+    { id: 'd06', name: 'Tajine poulet olives citron', emoji: null, timeMinutes: 40, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd06_1', name: 'Cuisses de poulet', quantity: '6', unit: 'pièces', category: 'proteines' },
         { id: 'd06_2', name: 'Olives vertes', quantity: '100', unit: 'g', category: 'epicerie' },
@@ -440,7 +440,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 42, carbs: 12, fat: 32, fiber: 3 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'healthy', 'dinner'] },
 
-    { id: 'd07', name: 'Bœuf sauté brocolis sésame', emoji: '🥩', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'd07', name: 'Bœuf sauté brocolis sésame', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd07_1', name: 'Bœuf émincé', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd07_2', name: 'Brocolis', quantity: '250', unit: 'g', category: 'fruits_legumes' },
@@ -450,7 +450,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 42, carbs: 12, fat: 22, fiber: 5 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'keto', 'muscle', 'fast', 'dinner'] },
 
-    { id: 'd08', name: 'Aubergines parmigiana', emoji: '🍆', timeMinutes: 50, servings: 4, difficulty: 'moyen',
+    { id: 'd08', name: 'Aubergines parmigiana', emoji: null, timeMinutes: 50, servings: 4, difficulty: 'moyen',
       ingredients: [
         { id: 'd08_1', name: 'Aubergines', quantity: '3', unit: 'pièces', category: 'fruits_legumes' },
         { id: 'd08_2', name: 'Sauce tomate', quantity: '400', unit: 'ml', category: 'epicerie' },
@@ -460,7 +460,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 20, carbs: 22, fat: 22, fiber: 8 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'healthy', 'dinner'] },
 
-    { id: 'd09', name: 'Moussaka végétarienne', emoji: '🇬🇷', timeMinutes: 60, servings: 4, difficulty: 'moyen',
+    { id: 'd09', name: 'Moussaka végétarienne', emoji: null, timeMinutes: 60, servings: 4, difficulty: 'moyen',
       ingredients: [
         { id: 'd09_1', name: 'Aubergines', quantity: '3', unit: 'pièces', category: 'fruits_legumes' },
         { id: 'd09_2', name: 'Lentilles cuites', quantity: '300', unit: 'g', category: 'proteines' },
@@ -470,7 +470,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 22, carbs: 42, fat: 22, fiber: 10 },
       tags: ['vegetarian', 'halal', 'dinner'] },
 
-    { id: 'd10', name: 'Gnocchis sauce tomate basilic', emoji: '🇮🇹', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'd10', name: 'Gnocchis sauce tomate basilic', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd10_1', name: 'Gnocchis', quantity: '400', unit: 'g', category: 'feculents' },
         { id: 'd10_2', name: 'Sauce tomate', quantity: '300', unit: 'ml', category: 'epicerie' },
@@ -480,7 +480,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 14, carbs: 78, fat: 8, fiber: 5 },
       tags: ['vegetarian', 'halal', 'budget', 'fast', 'dinner'] },
 
-    { id: 'd11', name: 'Curry thaï vert tofu', emoji: '🇹🇭', timeMinutes: 25, servings: 2, difficulty: 'moyen',
+    { id: 'd11', name: 'Curry thaï vert tofu', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'd11_1', name: 'Tofu ferme', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd11_2', name: 'Lait de coco', quantity: '400', unit: 'ml', category: 'epicerie' },
@@ -490,7 +490,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 22, carbs: 22, fat: 34, fiber: 6 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'dinner'] },
 
-    { id: 'd12', name: 'Nouilles soba edamame', emoji: '🍜', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'd12', name: 'Nouilles soba edamame', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd12_1', name: 'Nouilles soba', quantity: '200', unit: 'g', category: 'feculents' },
         { id: 'd12_2', name: 'Edamame', quantity: '150', unit: 'g', category: 'proteines' },
@@ -500,7 +500,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 420, protein: 22, carbs: 68, fat: 6, fiber: 8 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd13', name: 'Pho végétarien vietnamien', emoji: '🇻🇳', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'd13', name: 'Pho végétarien vietnamien', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd13_1', name: 'Nouilles de riz', quantity: '200', unit: 'g', category: 'feculents' },
         { id: 'd13_2', name: 'Bouillon légumes', quantity: '1500', unit: 'ml', category: 'epicerie' },
@@ -510,7 +510,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 360, protein: 18, carbs: 58, fat: 6, fiber: 5 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'dinner'] },
 
-    { id: 'd14', name: 'Shakshuka œufs tomates épicées', emoji: '🇮🇱', timeMinutes: 25, servings: 2, difficulty: 'facile',
+    { id: 'd14', name: 'Shakshuka œufs tomates épicées', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd14_1', name: 'Œufs', quantity: '4', unit: 'pièces', category: 'proteines' },
         { id: 'd14_2', name: 'Tomates concassées', quantity: '400', unit: 'g', category: 'fruits_legumes' },
@@ -520,7 +520,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 22, carbs: 22, fat: 22, fiber: 6 },
       tags: ['vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'healthy', 'budget', 'dinner'] },
 
-    { id: 'd15', name: 'Aubergines farcies quinoa', emoji: '🍆', timeMinutes: 45, servings: 2, difficulty: 'moyen',
+    { id: 'd15', name: 'Aubergines farcies quinoa', emoji: null, timeMinutes: 45, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'd15_1', name: 'Aubergines', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
         { id: 'd15_2', name: 'Quinoa', quantity: '100', unit: 'g', category: 'feculents' },
@@ -530,7 +530,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 12, carbs: 52, fat: 14, fiber: 12 },
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'sans_gluten', 'healthy', 'budget', 'dinner'] },
 
-    { id: 'd16', name: 'Curry poulet coco indien', emoji: '🍛', timeMinutes: 35, servings: 3, difficulty: 'moyen',
+    { id: 'd16', name: 'Curry poulet coco indien', emoji: null, timeMinutes: 35, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd16_1', name: 'Poulet', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'd16_2', name: 'Lait de coco', quantity: '400', unit: 'ml', category: 'epicerie' },
@@ -540,7 +540,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 620, protein: 40, carbs: 55, fat: 24, fiber: 4 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'muscle', 'dinner'] },
 
-    { id: 'd17', name: 'Poisson à la marocaine', emoji: '🇲🇦', timeMinutes: 30, servings: 2, difficulty: 'moyen',
+    { id: 'd17', name: 'Poisson à la marocaine', emoji: null, timeMinutes: 30, servings: 2, difficulty: 'moyen',
       ingredients: [
         { id: 'd17_1', name: 'Filet de merlan', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd17_2', name: 'Tomates', quantity: '3', unit: 'pièces', category: 'fruits_legumes' },
@@ -550,7 +550,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 320, protein: 38, carbs: 12, fat: 14, fiber: 4 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd18', name: 'Saumon teriyaki japonais', emoji: '🇯🇵', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'd18', name: 'Saumon teriyaki japonais', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd18_1', name: 'Filet de saumon', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd18_2', name: 'Sauce teriyaki', quantity: '4', unit: 'c.à.s', category: 'epicerie' },
@@ -560,7 +560,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 40, carbs: 52, fat: 18, fiber: 2 },
       tags: ['halal', 'sans_lactose', 'healthy', 'muscle', 'fast', 'dinner'] },
 
-    { id: 'd19', name: 'Merguez couscous royal', emoji: '🌭', timeMinutes: 30, servings: 3, difficulty: 'facile',
+    { id: 'd19', name: 'Merguez couscous royal', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'facile',
       ingredients: [
         { id: 'd19_1', name: 'Merguez', quantity: '6', unit: 'pièces', category: 'proteines' },
         { id: 'd19_2', name: 'Semoule', quantity: '250', unit: 'g', category: 'feculents' },
@@ -569,7 +569,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 620, protein: 32, carbs: 62, fat: 28, fiber: 6 },
       tags: ['halal', 'budget', 'dinner'] },
 
-    { id: 'd20', name: 'Steak grillé légumes rôtis', emoji: '🥩', timeMinutes: 25, servings: 2, difficulty: 'facile',
+    { id: 'd20', name: 'Steak grillé légumes rôtis', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'd20_1', name: 'Steak de bœuf', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'd20_2', name: 'Courgettes', quantity: '2', unit: 'pièces', category: 'fruits_legumes' },
@@ -578,7 +578,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 480, protein: 42, carbs: 18, fat: 26, fiber: 6 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'keto', 'muscle', 'dinner'] },
 
-    { id: 'd21', name: 'Lasagnes végétariennes épinards', emoji: '🇮🇹', timeMinutes: 50, servings: 4, difficulty: 'moyen',
+    { id: 'd21', name: 'Lasagnes végétariennes épinards', emoji: null, timeMinutes: 50, servings: 4, difficulty: 'moyen',
       ingredients: [
         { id: 'd21_1', name: 'Pâtes à lasagne', quantity: '250', unit: 'g', category: 'feculents' },
         { id: 'd21_2', name: 'Épinards', quantity: '400', unit: 'g', category: 'fruits_legumes' },
@@ -588,7 +588,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 22, carbs: 62, fat: 20, fiber: 6 },
       tags: ['vegetarian', 'halal', 'budget', 'dinner'] },
 
-    { id: 'd22', name: 'Brochettes agneau riz safrané', emoji: '🍢', timeMinutes: 30, servings: 3, difficulty: 'moyen',
+    { id: 'd22', name: 'Brochettes agneau riz safrané', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'moyen',
       ingredients: [
         { id: 'd22_1', name: 'Agneau en cubes', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'd22_2', name: 'Riz basmati', quantity: '200', unit: 'g', category: 'feculents' },
@@ -598,7 +598,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 580, protein: 42, carbs: 55, fat: 22, fiber: 3 },
       tags: ['halal', 'sans_gluten', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'd23', name: 'Chakchouka végétarienne', emoji: '🥘', timeMinutes: 25, servings: 3, difficulty: 'facile',
+    { id: 'd23', name: 'Chakchouka végétarienne', emoji: null, timeMinutes: 25, servings: 3, difficulty: 'facile',
       ingredients: [
         { id: 'd23_1', name: 'Poivrons', quantity: '3', unit: 'pièces', category: 'fruits_legumes' },
         { id: 'd23_2', name: 'Tomates', quantity: '4', unit: 'pièces', category: 'fruits_legumes' },
@@ -611,7 +611,7 @@ export async function seedRecipes(): Promise<void> {
     // ============================================
     // 🍤 RECETTES CREVETTES (5)
     // ============================================
-    { id: 'sh01', name: 'Spaghetti aux crevettes ail', emoji: '🍝', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'sh01', name: 'Spaghetti aux crevettes ail', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'sh01_1', name: 'Spaghetti', quantity: '250', unit: 'g', category: 'feculents' },
         { id: 'sh01_2', name: 'Crevettes', quantity: '250', unit: 'g', category: 'proteines' },
@@ -621,7 +621,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 520, protein: 32, carbs: 68, fat: 12, fiber: 4 },
       tags: ['halal', 'sans_lactose', 'healthy', 'muscle', 'fast', 'lunch', 'dinner'] },
 
-    { id: 'sh02', name: 'Crevettes sautées légumes riz', emoji: '🍤', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'sh02', name: 'Crevettes sautées légumes riz', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'sh02_1', name: 'Crevettes', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'sh02_2', name: 'Riz basmati', quantity: '150', unit: 'g', category: 'feculents' },
@@ -631,7 +631,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 460, protein: 32, carbs: 58, fat: 8, fiber: 4 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'muscle', 'fast', 'lunch', 'dinner'] },
 
-    { id: 'sh03', name: 'Crevettes au curry coco', emoji: '🍤', timeMinutes: 20, servings: 2, difficulty: 'facile',
+    { id: 'sh03', name: 'Crevettes au curry coco', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'sh03_1', name: 'Crevettes', quantity: '300', unit: 'g', category: 'proteines' },
         { id: 'sh03_2', name: 'Lait de coco', quantity: '400', unit: 'ml', category: 'epicerie' },
@@ -641,7 +641,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 540, protein: 30, carbs: 55, fat: 22, fiber: 3 },
       tags: ['halal', 'sans_gluten', 'sans_lactose', 'healthy', 'muscle', 'dinner'] },
 
-    { id: 'sh04', name: 'Salade crevettes avocat mangue', emoji: '🥗', timeMinutes: 15, servings: 2, difficulty: 'facile',
+    { id: 'sh04', name: 'Salade crevettes avocat mangue', emoji: null, timeMinutes: 15, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'sh04_1', name: 'Crevettes cuites', quantity: '250', unit: 'g', category: 'proteines' },
         { id: 'sh04_2', name: 'Avocat', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
@@ -651,7 +651,7 @@ export async function seedRecipes(): Promise<void> {
       nutrition: { calories: 380, protein: 28, carbs: 30, fat: 18, fiber: 8 },
       tags: ['halal', 'sans_lactose', 'sans_gluten', 'healthy', 'fast', 'lunch'] },
 
-    { id: 'sh05', name: 'Gambas grillées ail piment', emoji: '🍤', timeMinutes: 10, servings: 2, difficulty: 'facile',
+    { id: 'sh05', name: 'Gambas grillées ail piment', emoji: null, timeMinutes: 10, servings: 2, difficulty: 'facile',
       ingredients: [
         { id: 'sh05_1', name: 'Gambas', quantity: '400', unit: 'g', category: 'proteines' },
         { id: 'sh05_2', name: 'Ail', quantity: '4', unit: 'gousses', category: 'fruits_legumes' },
@@ -664,5 +664,5 @@ export async function seedRecipes(): Promise<void> {
   ];
 
   await prisma.recipe.createMany({ data: recipes });
-  console.log(`✅ ${recipes.length} recettes seedées (12 petit-déj + 25 déj + 23 dîners + 5 crevettes)`);
+  console.log(`${recipes.length} recettes seedées`);
 }

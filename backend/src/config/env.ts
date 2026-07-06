@@ -27,6 +27,6 @@ export const env = {
 
   // Rate limit
   RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,
-  RATE_LIMIT_MAX: 100,
+  RATE_LIMIT_MAX: 600,
   RATE_LIMIT_AI_MAX: 20,
 };

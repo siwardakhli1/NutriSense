@@ -13,8 +13,8 @@ const router = Router();
  *   get:
  *     summary: Dashboard complet avec stats, insights, progression
  */
-router.get('/dashboard', authMiddleware, (req: AuthRequest, res: Response) => {
-  const dashboard = buildDashboard(req.userId!);
+router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const dashboard = await buildDashboard(req.userId!);
   res.json(dashboard);
 });
 
@@ -24,9 +24,9 @@ router.get('/dashboard', authMiddleware, (req: AuthRequest, res: Response) => {
  *   get:
  *     summary: Stats journalières agrégées
  */
-router.get('/daily', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/daily', authMiddleware, async (req: AuthRequest, res: Response) => {
   const days = Math.min(Number(req.query.days) || 7, 90);
-  const stats = getDailyStats(req.userId!, days);
+  const stats = await getDailyStats(req.userId!, days);
   res.json(stats);
 });
 
@@ -36,9 +36,10 @@ router.get('/daily', authMiddleware, (req: AuthRequest, res: Response) => {
  *   get:
  *     summary: Courbe de poids
  */
-router.get('/weight', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/weight', authMiddleware, async (req: AuthRequest, res: Response) => {
   const days = Math.min(Number(req.query.days) || 90, 365);
-  res.json(getWeightHistory(req.userId!, days));
+  const history = await getWeightHistory(req.userId!, days);
+  res.json(history);
 });
 
 export default router;

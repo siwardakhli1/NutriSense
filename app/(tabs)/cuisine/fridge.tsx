@@ -1,6 +1,4 @@
-// ==========================================
-// SCREEN - Mode Frigo (v3 : seuil bas + affichage riche)
-// ==========================================
+// SCREEN - Mode Frigo
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
@@ -253,7 +251,7 @@ export default function FridgeScreen() {
               {match.missingIngredients.length > 0 && (
                 <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderColor: colors.border }}>
                   <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                    🛒 À acheter : {match.missingIngredients.join(', ')}
+                    À acheter : {match.missingIngredients.join(', ')}
                   </Text>
                 </View>
               )}

@@ -205,7 +205,30 @@ export default function ScannerScreen() {
         </View>
       </Card>
 
-     
+      {/* Codes de démo (utile pour démo jury / test sans caméra) */}
+      <Card style={{ marginBottom: 16 }}>
+        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 8 }}>
+          Essayer avec un produit réel
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>
+          Tape sur un produit pour tester l'API Open Food Facts.
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {DEMO_BARCODES.map((demo) => (
+            <TouchableOpacity
+              key={demo.code}
+              onPress={() => fetchProduct(demo.code)}
+              style={{
+                backgroundColor: colors.surfaceVariant,
+                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+              }}
+            >
+              <Text style={{ color: colors.text, fontSize: 13 }}>{demo.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
       {loading && (
         <View style={{ alignItems: 'center', padding: 20 }}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -288,7 +311,7 @@ export default function ScannerScreen() {
       {product && ['C', 'D', 'E'].includes(product.nutriScore) && (
         <Card style={{ marginTop: 14, backgroundColor: '#e8f5e9' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <Text style={{ fontSize: 20, marginRight: 8 }}>🌱</Text>
+            <Ionicons name="leaf-outline" size={20} color="#1b5e20" style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 15, fontWeight: '800', color: '#1b5e20', flex: 1 }}>
               Alternatives plus saines
             </Text>

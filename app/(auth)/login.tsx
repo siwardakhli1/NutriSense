@@ -65,7 +65,7 @@ export default function LoginScreen() {
               marginBottom: 16,
             }}
           >
-            <Text style={{ fontSize: 40 }}>🍽️</Text>
+            <Ionicons name="leaf" size={48} color="#FFFFFF" />
           </View>
           <Text style={{ fontSize: FontSize.xxl, fontWeight: '800', color: colors.text }}>
             Nutri<Text style={{ color: colors.primary }}>Sense</Text>

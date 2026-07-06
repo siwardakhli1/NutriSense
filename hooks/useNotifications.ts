@@ -54,7 +54,10 @@ export function useNotifications() {
       try {
         const id = await Notifications.scheduleNotificationAsync({
           content: { title, body, sound: true },
-          trigger: trigger || { seconds: 1 },
+          trigger: trigger || {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: 1,
+          },
         });
         return id;
       } catch (error) {
@@ -69,7 +72,7 @@ export function useNotifications() {
   const scheduleMealReminder = useCallback(
     async (mealName: string, hour: number, minute: number) => {
       return scheduleNotification(
-        '🍽️ Rappel repas',
+        'Rappel repas',
         `N'oublie pas de préparer : ${mealName}`,
         {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -85,9 +88,12 @@ export function useNotifications() {
   const scheduleShoppingReminder = useCallback(
     async (itemCount: number) => {
       return scheduleNotification(
-        '🛒 Courses à faire',
+        'Courses à faire',
         `Tu as ${itemCount} articles sur ta liste`,
-        { seconds: 5 }
+        {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 5,
+        }
       );
     },
     [scheduleNotification]

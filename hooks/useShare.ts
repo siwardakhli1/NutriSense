@@ -32,7 +32,7 @@ export function useShare() {
       .map((i) => `${i.checked ? '✅' : '⬜'} ${i.quantity} ${i.unit} ${i.name}`)
       .join('\n');
 
-    const message = `🛒 Ma liste de courses\n\n${items}\n\n— Envoyé depuis NutriSense 📱`;
+    const message = `Ma liste de courses\n\n${items}\n\n— Envoyé depuis NutriSense`;
 
     try {
       await Share.share({

@@ -1,11 +1,10 @@
-// ==========================================
-// SCREEN - Stats (Suivi > Stats) v2 : robuste + états vides
-// ==========================================
+// SCREEN - Stats (Suivi > Stats) - avec graphiques
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useAppContexts';
 import { Card } from '@/components/ui';
+import { BarChart, LineChart, PieChart, ProgressRing } from '@/components/MiniCharts';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
 
@@ -46,7 +45,6 @@ interface Dashboard {
   insights: string[];
 }
 
-// Valeurs par défaut safe
 const defaultDashboard: Dashboard = {
   dailyStats: [],
   weightHistory: [],
@@ -56,6 +54,8 @@ const defaultDashboard: Dashboard = {
   progressToGoal: { currentWeight: null, targetWeight: null, delta: null, percentDone: null },
   insights: [],
 };
+
+const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 export default function AnalyticsScreen() {
   const { colors } = useTheme();
@@ -68,7 +68,6 @@ export default function AnalyticsScreen() {
     setError(null);
     const res = await api.get<Dashboard>('/analytics/dashboard');
     if (res.success && res.data) {
-      // Merge avec les defaults pour éviter les undefined
       setDashboard({
         dailyStats: res.data.dailyStats ?? [],
         weightHistory: res.data.weightHistory ?? [],
@@ -85,216 +84,233 @@ export default function AnalyticsScreen() {
     setRefreshing(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const onRefresh = () => { setRefreshing(true); load(); };
+  const onRefresh = () => {
+    setRefreshing(true);
+    load();
+  };
 
-  const logDemoData = async () => {
-    // Ajouter quelques logs de démo pour peupler le dashboard
-    setLoading(true);
-    const meals = [
-      { source: 'manual', label: 'Petit-déj', mealType: 'breakfast', calories: 380, protein: 18, carbs: 42, fat: 12, fiber: 6, waterMl: 300 },
-      { source: 'manual', label: 'Déjeuner', mealType: 'lunch', calories: 520, protein: 30, carbs: 55, fat: 18, fiber: 8, waterMl: 500 },
-      { source: 'manual', label: 'Dîner', mealType: 'dinner', calories: 460, protein: 28, carbs: 42, fat: 16, fiber: 7, waterMl: 400 },
-    ];
-    for (const m of meals) {
-      await api.post('/logs/nutrition', m);
+  const seedDemo = async () => {
+    const res = await api.post('/analytics/seed-demo');
+    if (res.success) {
+      await load();
     }
-    await load();
   };
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.background }}>
-        <Ionicons name="alert-circle-outline" size={50} color={colors.warning} />
-        <Text style={{ color: colors.text, marginTop: 12, textAlign: 'center', fontWeight: '700' }}>Oups !</Text>
-        <Text style={{ color: colors.textMuted, marginTop: 8, textAlign: 'center' }}>{error}</Text>
-        <TouchableOpacity onPress={load} style={{
-          marginTop: 16, backgroundColor: colors.primary,
-          paddingHorizontal: 20, paddingVertical: 12, borderRadius: BorderRadius.md,
-        }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.lg, backgroundColor: colors.background }}>
+        <Ionicons name="alert-circle-outline" size={64} color={colors.warning || '#F58220'} />
+        <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: colors.text, marginTop: 16 }}>Oups !</Text>
+        <Text style={{ fontSize: FontSize.md, color: colors.textMuted, textAlign: 'center', marginTop: 8 }}>{error}</Text>
+        <TouchableOpacity
+          onPress={load}
+          style={{ marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: BorderRadius.md }}
+        >
           <Text style={{ color: '#fff', fontWeight: '700' }}>Réessayer</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // Toujours safe grâce au ?? [] dans le state
   const hasData = dashboard.dailyStats.length > 0;
-  const maxCal = hasData ? Math.max(...dashboard.dailyStats.map((d) => d.calories), 1) : 1;
-  const hasWeight = dashboard.weightHistory.length > 1;
-  const maxWeight = hasWeight ? Math.max(...dashboard.weightHistory.map((w) => w.weight), 1) : 1;
-  const minWeight = hasWeight ? Math.min(...dashboard.weightHistory.map((w) => w.weight), maxWeight) : 1;
+
+  // Préparer les données pour graphiques
+  const last7Days = dashboard.dailyStats.slice(-7);
+  const caloriesData = last7Days.map((d) => ({
+    label: DAY_LABELS[new Date(d.date).getDay() === 0 ? 6 : new Date(d.date).getDay() - 1] || '?',
+    value: d.calories,
+    color: d.calories > 0 ? colors.primary : colors.border,
+  }));
+
+  const macrosData = [
+    { label: 'Protéines', value: dashboard.totals7d.avgProtein * 4, color: '#EF4444' },
+    { label: 'Glucides', value: dashboard.totals7d.avgCarbs * 4, color: '#F59E0B' },
+    { label: 'Lipides', value: dashboard.totals7d.avgFat * 9, color: '#3B82F6' },
+  ];
+
+  const weightData = dashboard.weightHistory.slice(-7).map((w, i) => ({
+    label: `S${i + 1}`,
+    value: w.weight,
+  }));
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: Spacing.lg, backgroundColor: colors.background, flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={{ color: colors.textMuted, marginBottom: Spacing.lg }}>
-        Analyse de tes 14 derniers jours
+      <Text style={{ fontSize: FontSize.sm, color: colors.textMuted, marginBottom: Spacing.md }}>
+        Analyse de tes {dashboard.dailyStats.length || 14} derniers jours
       </Text>
 
-      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-        <StatBox colors={colors} icon="flame" value={String(dashboard.streak)}
-          label={`jour${dashboard.streak > 1 ? 's' : ''} de suite`} highlight={colors.warning} />
-        <StatBox colors={colors} icon="checkmark-circle" value={`${dashboard.adherenceRate}%`}
-          label="adhérence 7j" highlight={colors.success} />
-        <StatBox colors={colors} icon="trending-up"
-          value={dashboard.progressToGoal.percentDone != null ? `${dashboard.progressToGoal.percentDone}%` : '—'}
-          label="objectif" highlight={colors.primary} />
+      {/* Ligne KPI */}
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: Spacing.md }}>
+        <Card style={{ flex: 1, alignItems: 'center', padding: 12 }}>
+          <Ionicons name="flame" size={22} color="#FF6B00" />
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 4 }}>
+            {dashboard.streak}
+          </Text>
+          <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>jour de suite</Text>
+        </Card>
+
+        <Card style={{ flex: 1, alignItems: 'center', padding: 12 }}>
+          <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 4 }}>
+            {Math.round(dashboard.adherenceRate)}%
+          </Text>
+          <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>adhérence 7j</Text>
+        </Card>
+
+        <Card style={{ flex: 1, alignItems: 'center', padding: 12 }}>
+          <Ionicons
+            name={dashboard.progressToGoal.delta && dashboard.progressToGoal.delta < 0 ? 'trending-down' : 'trending-up'}
+            size={22}
+            color={colors.primary}
+          />
+          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 4 }}>
+            {dashboard.progressToGoal.delta !== null ? `${dashboard.progressToGoal.delta > 0 ? '+' : ''}${dashboard.progressToGoal.delta}` : '—'}
+          </Text>
+          <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>objectif</Text>
+        </Card>
       </View>
 
-      {/* Message si pas de données + bouton de démo */}
       {!hasData && (
-        <Card style={{ marginBottom: 16, backgroundColor: colors.primaryLight }}>
-          <View style={{ alignItems: 'center', padding: 8 }}>
-            <Ionicons name="analytics-outline" size={40} color={colors.primary} />
-            <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8, textAlign: 'center' }}>
-              Pas encore de données
-            </Text>
-            <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 4, fontSize: 13 }}>
-              Log tes repas via le scanner ou l'app pour voir tes stats.
-            </Text>
-            <TouchableOpacity
-              onPress={logDemoData}
-              style={{
-                marginTop: 12, backgroundColor: colors.primary,
-                paddingHorizontal: 16, paddingVertical: 10, borderRadius: BorderRadius.md,
-              }}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                🎯 Ajouter 3 repas démo
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-      )}
-
-      {dashboard.insights.length > 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 10 }}>
-            🧠 Insights personnalisés
+        <Card style={{ backgroundColor: colors.primaryLight, alignItems: 'center', padding: Spacing.lg, marginBottom: Spacing.md }}>
+          <Ionicons name="analytics-outline" size={40} color={colors.primary} />
+          <Text style={{ fontSize: FontSize.md, fontWeight: '700', color: colors.text, marginTop: 8 }}>
+            Pas encore de données
           </Text>
-          {dashboard.insights.map((insight, i) => (
-            <View key={i} style={{
-              flexDirection: 'row', paddingVertical: 8,
-              borderBottomWidth: i < dashboard.insights.length - 1 ? 1 : 0,
-              borderColor: colors.border,
-            }}>
-              <Text style={{ color: colors.primary, marginRight: 8 }}>•</Text>
-              <Text style={{ color: colors.text, flex: 1, lineHeight: 20 }}>{insight}</Text>
-            </View>
-          ))}
+          <Text style={{ fontSize: FontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
+            Log tes repas via le scanner ou l'app pour voir tes stats.
+          </Text>
+          <TouchableOpacity
+            onPress={seedDemo}
+            style={{
+              marginTop: 14,
+              backgroundColor: colors.primary,
+              paddingHorizontal: 18,
+              paddingVertical: 10,
+              borderRadius: BorderRadius.md,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+              Ajouter 3 repas démo
+            </Text>
+          </TouchableOpacity>
         </Card>
       )}
 
       {hasData && (
-        <Card style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 }}>
-            Calories quotidiennes
-          </Text>
-          <Text style={{ color: colors.textMuted, marginBottom: 16 }}>
-            Moyenne : {dashboard.totals7d.avgCalories} kcal/j
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 140, gap: 6 }}>
-            {dashboard.dailyStats.slice(-7).map((d, i) => {
-              const h = (d.calories / maxCal) * 120;
-              return (
-                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{
-                    width: '100%', height: h, backgroundColor: colors.primary,
-                    borderRadius: 6, marginBottom: 4,
-                  }} />
-                  <Text style={{ fontSize: 10, color: colors.textMuted }}>
-                    {d.date?.slice(-5) || ''}
+        <>
+          {/* Graphique Calories */}
+          <Card style={{ padding: Spacing.md, marginBottom: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="flame-outline" size={18} color={colors.primary} />
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                Calories consommées
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 'auto' }}>
+                7 derniers jours
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
+              Moyenne : <Text style={{ fontWeight: '700', color: colors.text }}>{Math.round(dashboard.totals7d.avgCalories)} kcal/jour</Text>
+            </Text>
+            <BarChart data={caloriesData} height={100} />
+          </Card>
+
+          {/* Répartition Macros */}
+          <Card style={{ padding: Spacing.md, marginBottom: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="pie-chart-outline" size={18} color={colors.primary} />
+              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                Répartition macros
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 'auto' }}>
+                7j
+              </Text>
+            </View>
+            <PieChart data={macrosData} size={100} />
+          </Card>
+
+          {/* Évolution du poids */}
+          {weightData.length >= 2 && (
+            <Card style={{ padding: Spacing.md, marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Ionicons name="scale-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                  Évolution du poids
+                </Text>
+              </View>
+              <LineChart data={weightData} height={120} color="#3B82F6" />
+            </Card>
+          )}
+
+          {/* Progression objectif */}
+          {dashboard.progressToGoal.percentDone !== null && (
+            <Card style={{ padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, alignSelf: 'flex-start' }}>
+                <Ionicons name="flag-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                  Objectif
+                </Text>
+              </View>
+              <ProgressRing
+                value={dashboard.progressToGoal.percentDone}
+                size={100}
+                color={colors.primary}
+                sublabel={
+                  dashboard.progressToGoal.targetWeight
+                    ? `Objectif : ${dashboard.progressToGoal.targetWeight} kg`
+                    : undefined
+                }
+              />
+            </Card>
+          )}
+
+          {/* Insights */}
+          {dashboard.insights.length > 0 && (
+            <Card style={{ padding: Spacing.md, marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Ionicons name="bulb-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                  Conseils personnalisés
+                </Text>
+              </View>
+              {dashboard.insights.map((insight, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    marginBottom: 8,
+                    paddingBottom: 8,
+                    borderBottomWidth: i < dashboard.insights.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '800' }}>•</Text>
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 }}>
+                    {insight}
                   </Text>
                 </View>
-              );
-            })}
-          </View>
-        </Card>
-      )}
-
-      {hasWeight && (
-        <Card style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 }}>
-            Courbe de poids
-          </Text>
-          <Text style={{ color: colors.textMuted, marginBottom: 16 }}>
-            {dashboard.progressToGoal.currentWeight} kg → cible {dashboard.progressToGoal.targetWeight} kg
-          </Text>
-          <View style={{ height: 100, flexDirection: 'row', alignItems: 'flex-end' }}>
-            {dashboard.weightHistory.map((w, i) => {
-              const normalized = (w.weight - minWeight) / (maxWeight - minWeight || 1);
-              const h = normalized * 80 + 10;
-              return (
-                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                  <View style={{
-                    width: 6, height: 6, borderRadius: 3,
-                    backgroundColor: colors.primary, marginBottom: h,
-                  }} />
-                </View>
-              );
-            })}
-          </View>
-        </Card>
-      )}
-
-      {hasData && (
-        <Card style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 16 }}>
-            Macros moyens (14j)
-          </Text>
-          <MacroBar label="Protéines" value={dashboard.totals7d.avgProtein} target={100} unit="g" color={colors.primary} colors={colors} />
-          <MacroBar label="Glucides" value={dashboard.totals7d.avgCarbs} target={250} unit="g" color={colors.accent} colors={colors} />
-          <MacroBar label="Lipides" value={dashboard.totals7d.avgFat} target={70} unit="g" color={colors.warning} colors={colors} />
-          <MacroBar label="Eau" value={dashboard.totals7d.avgWater / 1000} target={2} unit="L" color="#3b82f6" colors={colors} />
-        </Card>
+              ))}
+            </Card>
+          )}
+        </>
       )}
     </ScrollView>
-  );
-}
-
-function StatBox({ colors, icon, value, label, highlight }: any) {
-  return (
-    <View style={{
-      flex: 1, backgroundColor: colors.surface, padding: 12,
-      borderRadius: BorderRadius.md, alignItems: 'center',
-    }}>
-      <Ionicons name={icon} size={22} color={highlight} />
-      <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 4 }}>
-        {value}
-      </Text>
-      <Text style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>{label}</Text>
-    </View>
-  );
-}
-
-function MacroBar({ label, value, target, unit, color, colors }: any) {
-  const pct = Math.min(100, (value / target) * 100);
-  return (
-    <View style={{ marginBottom: 10 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text style={{ color: colors.text, fontWeight: '600' }}>{label}</Text>
-        <Text style={{ color: colors.textMuted }}>
-          {value.toFixed(0)}{unit} / {target}{unit}
-        </Text>
-      </View>
-      <View style={{
-        height: 8, backgroundColor: colors.surfaceVariant,
-        borderRadius: 4, overflow: 'hidden',
-      }}>
-        <View style={{ width: `${pct}%`, height: '100%', backgroundColor: color }} />
-      </View>
-    </View>
   );
 }

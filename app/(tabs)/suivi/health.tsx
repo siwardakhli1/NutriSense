@@ -116,9 +116,12 @@ export default function HealthScreen() {
       {/* Objectif actuel */}
       {goal && (
         <Card style={{ marginBottom: 16, backgroundColor: colors.primaryLight }}>
-          <Text style={{ fontWeight: '800', color: colors.primary, fontSize: FontSize.lg }}>
-            🎯 Ton objectif
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="flag-outline" size={20} color={colors.primary} />
+            <Text style={{ fontWeight: '800', color: colors.primary, fontSize: FontSize.lg }}>
+              Ton objectif
+            </Text>
+          </View>
           <View style={{ marginTop: 8 }}>
             <Row label="Calories/jour" value={`${goal.dailyCaloriesTarget} kcal`} colors={colors} />
             <Row label="Hydratation" value={`${goal.dailyWaterTarget} ml`} colors={colors} />
@@ -164,7 +167,7 @@ export default function HealthScreen() {
       {/* Formulaire de configuration */}
       <Card>
         <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 12, fontSize: FontSize.md }}>
-          {goal ? '🔧 Mettre à jour mes infos' : '📝 Configurer mon objectif'}
+          {goal ? 'Mettre à jour mes infos' : 'Configurer mon objectif'}
         </Text>
 
         <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>Poids actuel (kg)</Text>

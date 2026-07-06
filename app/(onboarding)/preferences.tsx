@@ -1,25 +1,26 @@
 // ==========================================
-// SCREEN - Onboarding Preferences
+// SCREEN - Onboarding Preferences (étape 3/3)
 // ==========================================
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan, useAuth } from '@/hooks/useAppContexts';
 import { useVibration } from '@/hooks/useNativeAPIs';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Button } from '@/components/ui';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
 import { DietaryPreference } from '@/types';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 
-const PREFS: { id: DietaryPreference; emoji: string }[] = [
-  { id: 'halal', emoji: '🌙' },
-  { id: 'vegan', emoji: '🌱' },
-  { id: 'vegetarian', emoji: '🥬' },
-  { id: 'nolactose', emoji: '🥛' },
-  { id: 'nogluten', emoji: '🌾' },
-  { id: 'nonut', emoji: '🥜' },
-  { id: 'keto', emoji: '🥑' },
-  { id: 'bio', emoji: '🍃' },
+const PREFS: { id: DietaryPreference; icon: string }[] = [
+  { id: 'halal', icon: 'moon-outline' },
+  { id: 'vegan', icon: 'leaf-outline' },
+  { id: 'vegetarian', icon: 'nutrition-outline' },
+  { id: 'nolactose', icon: 'water-outline' },
+  { id: 'nogluten', icon: 'ban-outline' },
+  { id: 'nonut', icon: 'alert-circle-outline' },
+  { id: 'keto', icon: 'flame-outline' },
+  { id: 'bio', icon: 'flower-outline' },
 ];
 
 export default function OnboardingPreferences() {
@@ -54,7 +55,6 @@ export default function OnboardingPreferences() {
     }
 
     try {
-      // Timeout de sécurité pour éviter de rester bloqué
       await Promise.race([
         generatePlan(),
         new Promise((_, reject) =>
@@ -67,10 +67,9 @@ export default function OnboardingPreferences() {
 
     vibrateSuccess();
 
-    // Planifier une notification de bienvenue
     try {
       await scheduleNotification(
-        '🎉 Bienvenue sur NutriSense !',
+        'Bienvenue sur NutriSense',
         'Ton plan repas de la semaine est prêt.',
       );
     } catch (e) {
@@ -131,90 +130,62 @@ export default function OnboardingPreferences() {
             }}
           />
         </View>
-        <Text style={{ fontSize: FontSize.sm, color: colors.textMuted, marginTop: 12, fontWeight: '600' }}>
-          {progress}%
-        </Text>
       </View>
     );
   }
 
-  return (
-    <View style={{ flex: 1, padding: Spacing.lg, backgroundColor: colors.background }}>
-      {/* Header */}
-      <View style={{ paddingTop: 60, marginBottom: 8 }}>
-        <Text style={{ fontSize: FontSize.xl, fontWeight: '800', color: colors.text }}>
-          {t.onboarding.prefsTitle}
-        </Text>
-      </View>
-      <Text style={{ fontSize: FontSize.sm, color: colors.textSecondary, marginBottom: Spacing.lg }}>
-        {t.onboarding.prefsSubtitle}
-      </Text>
+  const selectedCount = preferences.dietary.length;
 
-      {/* Chips */}
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {PREFS.map((p) => {
-            const active = preferences.dietary.includes(p.id);
-            return (
-              <TouchableOpacity
-                key={p.id}
-                activeOpacity={0.7}
-                onPress={() => togglePref(p.id)}
+  return (
+    <OnboardingLayout
+      step={3}
+      totalSteps={3}
+      title="Tes préférences"
+      subtitle="Sélectionne tes régimes ou restrictions (optionnel)"
+      onNext={handleGenerate}
+      nextLabel="Générer mon plan"
+      bottomHint={selectedCount > 0 ? `${selectedCount} préférence${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}` : undefined}
+    >
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        {PREFS.map((p) => {
+          const active = preferences.dietary.includes(p.id);
+          const prefKey = p.id as keyof typeof t.dietary;
+
+          return (
+            <TouchableOpacity
+              key={p.id}
+              activeOpacity={0.8}
+              onPress={() => togglePref(p.id)}
+              accessible={true}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: active }}
+              accessibilityLabel={t.dietary[prefKey] || p.id}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderRadius: BorderRadius.lg,
+                borderWidth: 2,
+                borderColor: active ? colors.primary : colors.border,
+                backgroundColor: active ? colors.primaryLight : colors.card,
+              }}
+            >
+              <Ionicons name={p.icon as any} size={20} color={active ? colors.primary : colors.textSecondary} />
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  paddingVertical: 12,
-                  paddingHorizontal: 20,
-                  borderRadius: 50,
-                  borderWidth: 2,
-                  borderColor: active ? colors.primary : colors.border,
-                  backgroundColor: active ? colors.primaryLight : colors.card,
+                  fontSize: 14,
+                  fontWeight: active ? '700' : '500',
+                  color: active ? colors.primary : colors.text,
                 }}
               >
-                <Text style={{ fontSize: 18 }}>{p.emoji}</Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: active ? '700' : '500',
-                    color: active ? colors.primary : colors.text,
-                  }}
-                >
-                  {t.dietary[p.id]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={{ textAlign: 'center', color: colors.textMuted, fontSize: 12, marginTop: Spacing.lg }}>
-          {preferences.dietary.length === 0
-            ? t.onboarding.prefsNone
-            : t.onboarding.prefsCount.replace('{count}', String(preferences.dietary.length))}
-        </Text>
+                {t.dietary[prefKey] || p.id}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
-
-      {/* CTA */}
-      <Button
-        title={t.onboarding.generate}
-        onPress={handleGenerate}
-        style={{ marginBottom: Spacing.lg }}
-      />
-
-      {/* Progress dots */}
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', paddingBottom: Spacing.md }}>
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{
-              width: i === 3 ? 28 : 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: i === 3 ? colors.primary : colors.border,
-            }}
-          />
-        ))}
-      </View>
-    </View>
+    </OnboardingLayout>
   );
 }
