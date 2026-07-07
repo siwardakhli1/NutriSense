@@ -312,6 +312,18 @@ export default function ProfileScreen() {
           }}
         >
           <SettingsRow
+            icon="people-outline"
+            iconColor="#FF6B00"
+            label="Inviter un ami"
+            onPress={() => router.push('/invite')}
+          />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            iconColor="#1A6B4A"
+            label="Confidentialité"
+            onPress={() => router.push('/privacy')}
+          />
+          <SettingsRow
             icon="information-circle-outline"
             iconColor="#2196F3"
             label={t.profile.about}

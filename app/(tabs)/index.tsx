@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
 import { useAccelerometer } from '@/hooks/useNativeAPIs';
+import { useShare } from '@/hooks/useShare';
 import { MealCard, DaySelector, BudgetCard, StatCard } from '@/components/MealComponents';
 import { LoadingSpinner, ErrorDisplay } from '@/components/ui';
 import { Spacing, FontSize } from '@/constants/Colors';
@@ -19,6 +20,7 @@ export default function PlanScreen() {
   const { t } = useLanguage();
   const { weekPlan, isLoading, error, refreshPlan, clearError, generatePlan, preferences } = useMealPlan();
   const { isShaking, startListening } = useAccelerometer();
+  const { shareWeekPlan } = useShare();
   const router = useRouter();
 
   const [selectedDay, setSelectedDay] = useState(0);
@@ -99,16 +101,43 @@ export default function PlanScreen() {
             <Text style={{ fontSize: FontSize.xl, fontWeight: '800', color: colors.text }}>
               {t.plan.title}
             </Text>
-            <TouchableOpacity
-              onPress={refreshPlan}
-              style={{
-                backgroundColor: colors.surfaceVariant,
-                borderRadius: 12,
-                padding: 10,
-              }}
-            >
-              <Ionicons name="refresh" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!weekPlan) return;
+                  const summary = weekPlan.days
+                    .map((d, i) => {
+                      const daysFr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+                      const meals = d.meals.map((m) => `  • ${m.type === 'lunch' ? '🍴 Midi' : m.type === 'dinner' ? '🌙 Soir' : '☀️ Matin'} : ${m.recipe.name}`).join('\n');
+                      return `${daysFr[i] || `Jour ${i + 1}`} ${d.date ? `(${d.date})` : ''}\n${meals}`;
+                    })
+                    .join('\n\n');
+                  const total = `\n\n💰 Budget estimé : ${weekPlan.estimatedCost.toFixed(1)}€ / ${preferences.budget}€`;
+                  shareWeekPlan(summary + total);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Partager mon plan de la semaine"
+                style={{
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: 12,
+                  padding: 10,
+                }}
+              >
+                <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={refreshPlan}
+                accessibilityRole="button"
+                accessibilityLabel="Régénérer le plan"
+                style={{
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: 12,
+                  padding: 10,
+                }}
+              >
+                <Ionicons name="refresh" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Week selector */}

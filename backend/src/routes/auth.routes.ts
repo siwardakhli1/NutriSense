@@ -302,4 +302,71 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response) 
   res.json({ message: 'Mot de passe réinitialisé avec succès' });
 });
 
+// ==========================================
+// SYSTÈME DE PARRAINAGE / INVITATION
+// ==========================================
+
+// GET /api/auth/referral - Récupérer son code de parrainage + stats
+router.get('/referral', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { referralCode: true, name: true },
+  });
+  if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
+
+  // Compter combien de personnes ont été parrainées
+  const invitedCount = await prisma.user.count({
+    where: { invitedBy: req.userId },
+  });
+
+  res.json({
+    referralCode: user.referralCode,
+    referralName: user.name,
+    invitedCount,
+    inviteLink: `https://nutrisense.app/invite/${user.referralCode}`,
+  });
+});
+
+// POST /api/auth/redeem-invite - Utiliser un code de parrainage (post-inscription)
+router.post('/redeem-invite', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { code } = req.body;
+
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: 'INVALID_CODE' });
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { invitedBy: true, referralCode: true },
+  });
+
+  if (currentUser?.invitedBy) {
+    return res.status(400).json({ error: 'ALREADY_INVITED', message: 'Tu as déjà utilisé un code' });
+  }
+
+  if (currentUser?.referralCode === code) {
+    return res.status(400).json({ error: 'CANNOT_INVITE_SELF', message: 'Tu ne peux pas te parrainer toi-même' });
+  }
+
+  const inviter = await prisma.user.findUnique({
+    where: { referralCode: code },
+    select: { id: true, name: true },
+  });
+
+  if (!inviter) {
+    return res.status(404).json({ error: 'CODE_NOT_FOUND', message: 'Code invalide' });
+  }
+
+  await prisma.user.update({
+    where: { id: req.userId },
+    data: { invitedBy: inviter.id },
+  });
+
+  res.json({
+    success: true,
+    inviterName: inviter.name,
+    message: `Tu as été parrainé par ${inviter.name} 🎉`,
+  });
+});
+
 export default router;
