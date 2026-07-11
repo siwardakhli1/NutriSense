@@ -11,7 +11,8 @@ const isTest = process.env.NODE_ENV === 'test';
 // Limiteur global (tous les endpoints)
 export const globalLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: isTest ? 100000 : env.RATE_LIMIT_MAX,
+  // 600 requêtes/15min en PRODUCTION, 5000 en développement (confort de test)
+  max: isTest ? 100000 : (env.NODE_ENV === 'production' ? env.RATE_LIMIT_MAX : 5000),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

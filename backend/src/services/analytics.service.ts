@@ -98,21 +98,26 @@ export async function computeStreak(userId: string): Promise<number> {
 
   if (!rows.length) return 0;
 
-  let streak = 0;
-  let expectedDate = new Date();
-  expectedDate.setHours(0, 0, 0, 0);
-
-  for (const row of rows) {
-    const logDate = new Date(row.date);
-    logDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor(
-      (expectedDate.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24)
+  // Convertit une date en numéro de jour (UTC) pour comparer sans souci de fuseau.
+  const toDayNumber = (d: Date): number => {
+    const dt = new Date(d);
+    return Math.floor(
+      Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()) / 86400000
     );
-    if (diffDays === 0 || diffDays === 1) {
-      streak++;
-      expectedDate = new Date(logDate);
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else break;
+  };
+
+  // Jours (numéros) où au moins un repas a été loggé, triés décroissant.
+  const loggedDays = rows.map((r) => toDayNumber(new Date(r.date)));
+
+  // On compte la plus longue suite de jours consécutifs à partir du jour
+  // le plus récent loggé (pas d'aujourd'hui) : ça gère aussi bien les repas
+  // passés que les repas cochés à l'avance.
+  let streak = 1;
+  for (let i = 1; i < loggedDays.length; i++) {
+    const gap = loggedDays[i - 1] - loggedDays[i];
+    if (gap === 1) streak++;
+    else if (gap === 0) continue;
+    else break;
   }
   return streak;
 }

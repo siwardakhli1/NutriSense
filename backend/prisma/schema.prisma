@@ -18,7 +18,7 @@ model User {
   email         String   @unique
   password      String
   isOnboarded   Boolean  @default(false) @map("is_onboarded")
-  referralCode  String?  @unique @map("referral_code")
+  referralCode  String   @unique @default(cuid()) @map("referral_code")
   invitedBy     String?  @map("invited_by")
   createdAt     DateTime @default(now()) @map("created_at")
 

@@ -22,22 +22,23 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
-    setError('');
-    if (!email.trim() || !password.trim()) {
-      setError('Veuillez remplir tous les champs');
-      vibrateError();
-      return;
-    }
+const handleLogin = async () => {
+  if (!email.trim() || !password.trim()) {
+    setError('Veuillez remplir tous les champs');
+    vibrateError();
+    return;
+  }
 
-    const result = await login(email, password);
-    if (result.success) {
-      vibrate();
-    } else {
-      setError(result.error || t.auth.loginError);
-      vibrateError();
-    }
-  };
+  setError('');
+  const result = await login(email, password);
+  console.log('>>> RESULT LOGIN:', JSON.stringify(result));  // DEBUG
+  if (result.success) {
+    vibrate();
+  } else {
+    setError(result.error || 'Email ou mot de passe incorrect');
+    vibrateError();
+  }
+};
 
   return (
     <KeyboardAvoidingView
@@ -96,9 +97,23 @@ export default function LoginScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.error, fontSize: FontSize.sm, textAlign: 'center' }}>
-              {error}
-            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: '#FEE2E2',
+                borderWidth: 1,
+                borderColor: '#FCA5A5',
+              }}
+            >
+              <Ionicons name="alert-circle" size={20} color="#B91C1C" />
+              <Text style={{ flex: 1, color: '#B91C1C', fontSize: FontSize.sm, fontWeight: '600' }}>
+                {error}
+              </Text>
+            </View>
           ) : null}
 
           <Button

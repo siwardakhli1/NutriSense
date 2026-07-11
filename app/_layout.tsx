@@ -2,11 +2,10 @@
 // ROOT LAYOUT
 // Providers, Splash screen, Routes protégées
 // ==========================================
-import { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Stack, Redirect } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -14,16 +13,43 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { MealPlanProvider } from '@/contexts/MealPlanContext';
 import { useTheme, useAuth } from '@/hooks/useAppContexts';
 import { LoadingSpinner } from '@/components/ui';
-import { View } from 'react-native';
 
-// Empêcher le splash screen de se cacher automatiquement
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigation() {
   const { colors, isDark } = useTheme();
   const { user, isLoading, isOnboarded } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
 
-  if (isLoading) {
+  // On ne montre le spinner GLOBAL qu'au tout premier chargement
+  // (restauration de session). Les login/logout suivants ne doivent PAS
+  // démonter l'écran courant, sinon les messages d'erreur disparaissent.
+  const [firstLoadDone, setFirstLoadDone] = useState(false);
+  useEffect(() => {
+    if (!isLoading && !firstLoadDone) {
+      setFirstLoadDone(true);
+    }
+  }, [isLoading, firstLoadDone]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const first = segments[0];
+    const inAuth = first === '(auth)';
+    const inOnboarding = first === '(onboarding)';
+
+    if (!user && !inAuth) {
+      router.replace('/(auth)/login');
+    } else if (user && !isOnboarded && !inOnboarding) {
+      router.replace('/(onboarding)');
+    } else if (user && isOnboarded && (inAuth || inOnboarding)) {
+      router.replace('/(tabs)');
+    }
+  }, [user, isOnboarded, isLoading, segments]);
+
+  // Spinner seulement pendant la restauration initiale de session
+  if (isLoading && !firstLoadDone) {
     return <LoadingSpinner fullScreen message="Chargement..." />;
   }
 
@@ -40,58 +66,22 @@ function RootNavigation() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="preferences"
-          options={{ headerShown: true, animation: 'slide_from_right' }}
-        />
-        <Stack.Screen
-          name="change-password"
-          options={{ headerShown: true, animation: 'slide_from_right' }}
-        />
-        <Stack.Screen
-          name="favorites"
-          options={{ headerShown: true, animation: 'slide_from_right' }}
-        />
-        <Stack.Screen
-          name="my-recipes"
-          options={{ headerShown: true, animation: 'slide_from_right' }}
-        />
-        <Stack.Screen
-          name="edit-recipe"
-          options={{ headerShown: true, animation: 'slide_from_bottom' }}
-        />
-        <Stack.Screen
-          name="recipe/[id]"
-          options={{ animation: 'slide_from_bottom' }}
-        />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
+        <Stack.Screen name="preferences" options={{ headerShown: true }} />
+        <Stack.Screen name="change-password" options={{ headerShown: true }} />
+        <Stack.Screen name="favorites" options={{ headerShown: true }} />
+        <Stack.Screen name="my-recipes" options={{ headerShown: true }} />
+        <Stack.Screen name="edit-recipe" options={{ headerShown: true, animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="recipe/[id]" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
-
-      {/* Redirections basées sur l'état auth */}
-      {!user && <Redirect href="/(auth)/login" />}
-      {user && !isOnboarded && <Redirect href="/(onboarding)" />}
-      {user && isOnboarded && <Redirect href="/(tabs)" />}
     </>
   );
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    // Ajouter des polices personnalisées ici si nécessaire
-  });
-
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) {
-    return null;
-  }
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

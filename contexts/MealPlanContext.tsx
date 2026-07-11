@@ -16,6 +16,7 @@ interface MealPlanState {
 
 interface MealPlanContextType extends MealPlanState {
   generatePlan: () => Promise<void>;
+  regenerateFromToday: () => Promise<void>;
   toggleShoppingItem: (itemId: string) => Promise<void>;
   updateBudget: (budget: number) => Promise<void>;
   updateGoal: (goal: Goal) => Promise<void>;
@@ -81,6 +82,7 @@ function mealPlanReducer(state: MealPlanState, action: Action): MealPlanState {
 export const MealPlanContext = createContext<MealPlanContextType>({
   ...initialState,
   generatePlan: async () => {},
+  regenerateFromToday: async () => {},
   toggleShoppingItem: async () => {},
   updateBudget: async () => {},
   updateGoal: async () => {},
@@ -170,7 +172,29 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.preferences]);
 
-  const toggleShoppingItem = useCallback(async (itemId: string) => {
+const regenerateFromToday = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    const response = await api.post<{
+      weekPlan: WeekPlan;
+      shoppingList: ShoppingList;
+      recipes: Recipe[];
+    }>('/meals/regenerate-from-today', {
+      budget: state.preferences.budget,
+      goal: state.preferences.goal,
+      dietary: state.preferences.dietary,
+      servings: state.preferences.servings,
+    });
+
+    if (response.success && response.data) {
+      dispatch({ type: 'SET_PLAN', payload: response.data.weekPlan });
+      dispatch({ type: 'SET_SHOPPING', payload: response.data.shoppingList });
+      dispatch({ type: 'SET_RECIPES', payload: response.data.recipes });
+    }
+    dispatch({ type: 'SET_LOADING', payload: false });
+  }, [state.preferences]);
+
+    const toggleShoppingItem = useCallback(async (itemId: string) => {
     if (!state.shoppingList) return;
     // Optimistic update UI d'abord
     const optimisticItems = state.shoppingList.items.map((it: any) =>
@@ -186,6 +210,26 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
     const merged = { ...state.preferences, ...partial };
     dispatch({ type: 'SET_PREFERENCES', payload: merged });
     await api.put('/preferences', partial);
+
+    // Régénère aujourd'hui + le futur selon les nouvelles préférences,
+    // en préservant les jours passés (historique figé).
+    dispatch({ type: 'SET_LOADING', payload: true });
+    const response = await api.post<{
+      weekPlan: WeekPlan;
+      shoppingList: ShoppingList;
+      recipes: Recipe[];
+    }>('/meals/regenerate-from-today', {
+      budget: merged.budget,
+      goal: merged.goal,
+      dietary: merged.dietary,
+      servings: merged.servings,
+    });
+    if (response.success && response.data) {
+      dispatch({ type: 'SET_PLAN', payload: response.data.weekPlan });
+      dispatch({ type: 'SET_SHOPPING', payload: response.data.shoppingList });
+      dispatch({ type: 'SET_RECIPES', payload: response.data.recipes });
+    }
+    dispatch({ type: 'SET_LOADING', payload: false });
   }, [state.preferences]);
 
   const updateBudget = useCallback((budget: number) => updatePreferenceRemote({ budget }), [updatePreferenceRemote]);
@@ -210,6 +254,7 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
       value={{
         ...state,
         generatePlan,
+        regenerateFromToday,
         toggleShoppingItem,
         updateBudget,
         updateGoal,

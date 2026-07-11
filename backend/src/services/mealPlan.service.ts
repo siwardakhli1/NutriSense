@@ -23,6 +23,15 @@ interface Recipe {
   tags: any;
 }
 
+// Convertit une Date en 'YYYY-MM-DD' en heure LOCALE (jamais UTC),
+// pour éviter tout décalage d'un jour dû au fuseau horaire.
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 type MealType = typeof MEAL_TYPES[number];
 
@@ -159,7 +168,7 @@ export async function generateWeekPlan(options: GenerateOptions) {
     }
 
     days.push({
-      date: currentDate.toISOString().split('T')[0],
+      date: toLocalDateStr(currentDate),
       meals,
     });
   }
@@ -173,8 +182,8 @@ export async function generateWeekPlan(options: GenerateOptions) {
     data: {
       id: weekPlanId,
       userId: options.userId,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
+      startDate: toLocalDateStr(startDate),
+      endDate: toLocalDateStr(endDate),
       days,
       budget: options.budget,
       estimatedCost,
@@ -183,8 +192,8 @@ export async function generateWeekPlan(options: GenerateOptions) {
 
   return {
     id: weekPlanId,
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
+    startDate: toLocalDateStr(startDate),
+    endDate: toLocalDateStr(endDate),
     days,
     budget: options.budget,
     estimatedCost,
@@ -194,6 +203,119 @@ export async function generateWeekPlan(options: GenerateOptions) {
 /**
  * Génère la liste de courses à partir d'un plan repas.
  */
+export async function regeneratePlanFromToday(options: GenerateOptions) {
+  const existing = await prisma.weekPlan.findFirst({
+    where: { userId: options.userId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!existing) {
+    return generateWeekPlan(options);
+  }
+
+  // Aujourd'hui en date LOCALE (cohérent avec les dates des jours du plan)
+  const todayStr = toLocalDateStr(new Date());
+
+  const existingDays = (existing.days as any[]) || [];
+  const pastDays = existingDays.filter((d) => d.date < todayStr);
+  const daysToRegen = existingDays.filter((d) => d.date >= todayStr);
+
+  if (daysToRegen.length === 0) {
+    return {
+      id: existing.id,
+      startDate: existing.startDate,
+      endDate: existing.endDate,
+      days: existingDays,
+      budget: existing.budget,
+      estimatedCost: existing.estimatedCost,
+    };
+  }
+
+  const allRecipes = await prisma.recipe.findMany();
+  if (!allRecipes.length) {
+    throw new Error('Aucune recette dans la base.');
+  }
+
+  const scored = allRecipes.map((r) => ({
+    recipe: r as Recipe,
+    score: scoreRecipe(r as Recipe, options),
+  }));
+
+  const pools = splitByMealType(scored.map((s) => s.recipe));
+  const sortByScore = (arr: Recipe[]) =>
+    [...arr].sort(
+      (a, b) =>
+        scored.find((s) => s.recipe.id === b.id)!.score -
+        scored.find((s) => s.recipe.id === a.id)!.score
+    );
+  const sortedPools = {
+    breakfast: sortByScore(pools.breakfast),
+    lunch: sortByScore(pools.lunch),
+    dinner: sortByScore(pools.dinner),
+  };
+
+  const usedRecipeIds = new Set<string>();
+  pastDays.forEach((d: any) =>
+    d.meals?.forEach((m: any) => m?.recipe?.id && usedRecipeIds.add(m.recipe.id))
+  );
+
+  const regeneratedDays = daysToRegen.map((day: any, dayIdx: number) => {
+    const meals: any[] = [];
+    for (const mealType of MEAL_TYPES) {
+      let pick = sortedPools[mealType].find((r) => !usedRecipeIds.has(r.id));
+      if (!pick) {
+        pick = sortedPools[mealType][dayIdx % sortedPools[mealType].length];
+      }
+      usedRecipeIds.add(pick.id);
+      meals.push({
+        id: generateId(),
+        type: mealType,
+        recipe: {
+          id: pick.id,
+          name: pick.name,
+          emoji: pick.emoji,
+          time: pick.timeMinutes,
+          servings: pick.servings,
+          difficulty: pick.difficulty,
+          ingredients: pick.ingredients,
+          steps: pick.steps,
+          nutrition: pick.nutrition,
+          tags: pick.tags,
+        },
+      });
+    }
+    return { date: day.date, meals };
+  });
+
+  const mergedDays = [...pastDays, ...regeneratedDays].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+  );
+
+  const totalMeals = mergedDays.length * MEAL_TYPES.length;
+  const avgMealCost =
+    options.goal === 'budget' ? 2.5 : options.goal === 'muscle' ? 4.5 : 3.5;
+  const estimatedCost =
+    Math.round(totalMeals * avgMealCost * (options.servings / 2) * 10) / 10;
+
+  await prisma.weekPlan.update({
+    where: { id: existing.id },
+    data: {
+      days: mergedDays,
+      budget: options.budget,
+      estimatedCost,
+    },
+  });
+
+  return {
+    id: existing.id,
+    startDate: existing.startDate,
+    endDate: existing.endDate,
+    days: mergedDays,
+    budget: options.budget,
+    estimatedCost,
+  };
+}
+
 export async function generateShoppingList(userId: string, weekPlan: any) {
   const itemsByKey: Record<string, any> = {};
 

@@ -29,7 +29,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
   await prisma.user.create({
     data: {
       id, name, email, password: hashedPassword,
-      preferences: { create: {} }, // crée les prefs par défaut
+      preferences: { create: {} }, 
     },
   });
 

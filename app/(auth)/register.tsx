@@ -23,7 +23,6 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
-    setError('');
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Veuillez remplir tous les champs');
       vibrateError();
@@ -35,6 +34,7 @@ export default function RegisterScreen() {
       return;
     }
 
+    setError('');
     const result = await register(name, email, password);
     if (result.success) {
       vibrate();
@@ -102,9 +102,23 @@ export default function RegisterScreen() {
           />
 
           {error ? (
-            <Text style={{ color: colors.error, fontSize: FontSize.sm, textAlign: 'center' }}>
-              {error}
-            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: '#FEE2E2',
+                borderWidth: 1,
+                borderColor: '#FCA5A5',
+              }}
+            >
+              <Ionicons name="alert-circle" size={20} color="#B91C1C" />
+              <Text style={{ flex: 1, color: '#B91C1C', fontSize: FontSize.sm, fontWeight: '600' }}>
+                {error}
+              </Text>
+            </View>
           ) : null}
 
           <Button

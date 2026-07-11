@@ -15,6 +15,15 @@ import { Spacing, FontSize } from '@/constants/Colors';
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
+// Renvoie la date du jour au format YYYY-MM-DD en heure LOCALE (pas UTC).
+function getTodayStr() {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, '0');
+  const d = String(n.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export default function PlanScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -25,6 +34,18 @@ export default function PlanScreen() {
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
+  // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
+  // ses clics ne sont JAMAIS écrasés.
+  const didSelectTodayRef = React.useRef(false);
+  useEffect(() => {
+    if (didSelectTodayRef.current) return;      // déjà fait → on ne touche plus
+    if (!weekPlan?.days || weekPlan.days.length === 0) return;
+    const todayStr = getTodayStr();
+    const idx = weekPlan.days.findIndex((d: any) => d.date === todayStr);
+    setSelectedDay(idx >= 0 ? idx : 0);
+    didSelectTodayRef.current = true;           // marqué comme fait pour toujours
+  }, [weekPlan]);
 
   // Shake to refresh (accéléromètre)
   useEffect(() => {
@@ -46,7 +67,6 @@ export default function PlanScreen() {
   }, []);
 
   // Auto-régénération si la semaine est terminée
-  // Ex: si le plan couvre du 3 au 9 juillet et qu'on est le 10 juillet, on régénère
   useEffect(() => {
     if (!weekPlan?.endDate || isLoading) return;
     const today = new Date();
@@ -61,7 +81,6 @@ export default function PlanScreen() {
   }, [weekPlan?.endDate]);
 
   // Rafraîchir le plan à chaque fois que l'utilisateur revient sur ce tab
-  // (ex: après avoir modifié ses préférences et régénéré)
   useFocusEffect(
     React.useCallback(() => {
       refreshPlan();
@@ -83,6 +102,7 @@ export default function PlanScreen() {
   }
 
   const dayPlan = weekPlan?.days[selectedDay];
+  const breakfastMeal = dayPlan?.meals.find((m) => m.type === 'breakfast');
   const lunchMeal = dayPlan?.meals.find((m) => m.type === 'lunch');
   const dinnerMeal = dayPlan?.meals.find((m) => m.type === 'dinner');
 
@@ -126,7 +146,7 @@ export default function PlanScreen() {
                 <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={refreshPlan}
+                onPress={generatePlan}
                 accessibilityRole="button"
                 accessibilityLabel="Régénérer le plan"
                 style={{
@@ -142,7 +162,16 @@ export default function PlanScreen() {
 
           {/* Week selector */}
           <DaySelector
-            days={DAY_KEYS.map((k) => t.days[k])}
+            days={
+              weekPlan?.days?.map((d) => {
+                const parts = (d.date || '').split('-');
+                if (parts.length !== 3) return '';
+                const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                const jsDay = dt.getDay();
+                const keyMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+                return t.days[keyMap[jsDay]];
+              }) ?? DAY_KEYS.map((k) => t.days[k])
+            }
             selectedIndex={selectedDay}
             onSelect={setSelectedDay}
             dayNumbers={weekPlan?.days?.map((d) => {
@@ -160,7 +189,7 @@ export default function PlanScreen() {
             daysWithPlan={weekPlan?.days?.map((d) => (d.meals?.length ?? 0) >= 3) ?? []}
             todayIndex={(() => {
               if (!weekPlan?.days) return -1;
-              const todayStr = new Date().toISOString().split('T')[0];
+              const todayStr = getTodayStr();
               return weekPlan.days.findIndex((d) => d.date === todayStr);
             })()}
           />
@@ -168,6 +197,17 @@ export default function PlanScreen() {
 
         {/* Meals */}
         <View style={{ padding: Spacing.lg, paddingTop: Spacing.lg }}>
+          {breakfastMeal && (
+            <MealCard
+              key={`breakfast-${dayPlan?.date}`}
+              label={t.plan.breakfast}
+              labelIcon="🌅"
+              meal={breakfastMeal}
+              date={dayPlan?.date}
+              onPress={() => router.push(`/recipe/${breakfastMeal.recipe.id}`)}
+            />
+          )}
+
           {lunchMeal && (
             <MealCard
               key={`lunch-${dayPlan?.date}`}

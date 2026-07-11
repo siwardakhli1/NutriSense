@@ -8,6 +8,7 @@ import { useTheme } from '@/hooks/useAppContexts';
 import { Meal } from '@/types';
 import { FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
+import { RecipeImage } from '@/components/RecipeImage';
 
 interface MealCardProps {
   label: string;
@@ -20,10 +21,11 @@ interface MealCardProps {
 
 function getMealType(label: string): string {
   const l = label.toLowerCase();
-  if (l.includes('petit') || l.includes('déj')) return 'breakfast';
-  if (l.includes('déjeuner')) return 'lunch';
+  if (l.includes('petit')) return 'breakfast';
+  if (l.includes('déjeuner') || l.includes('dejeuner')) return 'lunch';
   if (l.includes('dîner') || l.includes('diner')) return 'dinner';
   if (l.includes('snack') || l.includes('collation')) return 'snack';
+  if (l.includes('déj') || l.includes('dej')) return 'breakfast';
   return 'other';
 }
 
@@ -33,19 +35,39 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
   const [logging, setLogging] = useState(false);
   const [logId, setLogId] = useState<string | null>(null);
 
+  // Logique métier : on ne peut pas cocher un repas dans le FUTUR.
+  const todayStr = (() => {
+    // On cale "aujourd'hui" sur le fuseau de la France (Europe/Paris),
+    // pour que le changement de jour se fasse à minuit heure française,
+    // quel que soit le fuseau du téléphone/émulateur.
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date()); // renvoie 'YYYY-MM-DD'
+    } catch {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+  })();
+  const isFuture = !!date && date > todayStr;
+
   // Vérifier si CE repas à CETTE date a été loggé
   useEffect(() => {
     if (!date) return;
     (async () => {
-      const res = await api.get<{ logs: any[] }>('/nutrition/logs?days=30');
+      const res = await api.get<{ logs: any[] }>('/nutrition/logs?days=365');
       if (res.success && res.data) {
-        const mealType = getMealType(label);
         // On match sur date + label + mealType (les 3 doivent correspondre)
-        const alreadyLogged = res.data.logs.find(
+        const norm = (s: string) => (s || '').trim().toLowerCase();
+const alreadyLogged = res.data.logs.find(
           (l: any) =>
-            l.label === meal.recipe.name &&
-            l.mealType === mealType &&
-            l.loggedAt.startsWith(date) // date au format YYYY-MM-DD
+            norm(l.label) === norm(meal.recipe.name) &&
+            l.mealType === meal.type &&
+            typeof l.loggedAt === 'string' &&
+            l.loggedAt.slice(0, 10) === date
         );
         if (alreadyLogged) {
           setIsEaten(true);
@@ -60,6 +82,7 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
 
   const handleToggleEaten = async () => {
     if (logging || !date) return;
+    if (isFuture) return;
     setLogging(true);
 
     if (isEaten && logId) {
@@ -72,11 +95,11 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
       }
     } else {
       // Logger avec la vraie date du repas
-      const loggedAt = new Date(date + 'T12:00:00').toISOString();
+      const loggedAt = date + 'T12:00:00.000Z';
       const res = await api.post<{ success: boolean; log: any }>('/nutrition/log', {
         source: 'recipe',
         label: meal.recipe.name,
-        mealType: getMealType(label),
+        mealType: meal.type,
         calories: meal.recipe.nutrition?.calories || 0,
         protein: meal.recipe.nutrition?.protein || 0,
         carbs: meal.recipe.nutrition?.carbs || 0,
@@ -172,45 +195,66 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 30 }}>{meal.recipe.emoji}</Text>
+              <RecipeImage
+                name={meal.recipe.name}
+                fallbackEmoji={meal.recipe.emoji}
+                style={{ fontSize: 30 }}
+              />
             </View>
           </View>
         </TouchableOpacity>
 
-        {/* Bouton "J'ai mangé" */}
+        {/* Bouton "J'ai mangé" — état "À venir" pour les jours futurs */}
         <TouchableOpacity
           onPress={handleToggleEaten}
-          disabled={logging}
+          disabled={logging || isFuture}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel={isEaten ? "Annuler j'ai mangé" : 'Marquer comme mangé'}
-          accessibilityState={{ checked: isEaten }}
+          accessibilityLabel={
+            isFuture
+              ? 'Repas à venir, non disponible'
+              : isEaten
+              ? "Annuler j'ai mangé"
+              : 'Marquer comme mangé'
+          }
+          accessibilityState={{ checked: isEaten, disabled: isFuture }}
           style={{
             marginTop: 12,
             paddingVertical: 10,
             borderRadius: BorderRadius.md,
-            backgroundColor: isEaten ? colors.primary : colors.background,
+            backgroundColor: isFuture
+              ? colors.background
+              : isEaten
+              ? colors.primary
+              : colors.background,
             borderWidth: 1,
-            borderColor: colors.primary,
+            borderColor: isFuture ? colors.border : colors.primary,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
+            opacity: isFuture ? 0.55 : 1,
           }}
         >
           <Ionicons
-            name={isEaten ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            name={
+              isFuture
+                ? 'time-outline'
+                : isEaten
+                ? 'checkmark-circle'
+                : 'checkmark-circle-outline'
+            }
             size={18}
-            color={isEaten ? '#fff' : colors.primary}
+            color={isFuture ? colors.textMuted : isEaten ? '#fff' : colors.primary}
           />
           <Text
             style={{
               fontSize: 13,
               fontWeight: '700',
-              color: isEaten ? '#fff' : colors.primary,
+              color: isFuture ? colors.textMuted : isEaten ? '#fff' : colors.primary,
             }}
           >
-            {isEaten ? 'Repas mangé ✓' : "J'ai mangé"}
+            {isFuture ? 'À venir' : isEaten ? 'Repas mangé ✓' : "J'ai mangé"}
           </Text>
         </TouchableOpacity>
       </View>

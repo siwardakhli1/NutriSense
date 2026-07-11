@@ -96,13 +96,13 @@ export default function PreferencesScreen() {
     if (!ok) return;
 
     setRegenerating(true);
-    const res = await api.post('/meals/generate', { goal, budget, dietary, servings });
+    const res = await api.post('/meals/regenerate-from-today', { goal, budget, dietary, servings });
 
     if (res.success) {
       // Forcer le rechargement du contexte pour que le tab Plan voit le nouveau plan
       await refreshPlan();
       setRegenerating(false);
-      Alert.alert('✅ Plan régénéré', 'Ton nouveau plan est prêt !', [
+      Alert.alert('✅ Plan mis à jour', 'Les jours passés sont conservés, le reste de la semaine a été régénéré !', [
         { text: 'Voir mon plan', onPress: () => router.replace('/(tabs)') },
       ]);
     } else {

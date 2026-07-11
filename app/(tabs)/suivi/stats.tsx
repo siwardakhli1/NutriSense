@@ -93,13 +93,6 @@ export default function AnalyticsScreen() {
     load();
   };
 
-  const seedDemo = async () => {
-    const res = await api.post('/analytics/seed-demo');
-    if (res.success) {
-      await load();
-    }
-  };
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -195,20 +188,6 @@ export default function AnalyticsScreen() {
           <Text style={{ fontSize: FontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
             Log tes repas via le scanner ou l'app pour voir tes stats.
           </Text>
-          <TouchableOpacity
-            onPress={seedDemo}
-            style={{
-              marginTop: 14,
-              backgroundColor: colors.primary,
-              paddingHorizontal: 18,
-              paddingVertical: 10,
-              borderRadius: BorderRadius.md,
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-              Ajouter 3 repas démo
-            </Text>
-          </TouchableOpacity>
         </Card>
       )}
 

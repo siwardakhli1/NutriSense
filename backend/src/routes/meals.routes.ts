@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { prisma } from '../config/database';
 import { authMiddleware, AuthRequest } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-import { generateWeekPlan, generateShoppingList } from '../services/mealPlan.service';
+import { generateWeekPlan, generateShoppingList, regeneratePlanFromToday } from '../services/mealPlan.service';
 
 const router = Router();
 
@@ -62,6 +62,53 @@ router.post('/generate', authMiddleware, validate(generateSchema), async (req: A
     });
   } catch (err: any) {
     res.status(400).json({ error: 'GENERATION_FAILED', message: err.message });
+  }
+});
+
+/**
+ * POST /api/meals/regenerate-from-today
+ * Régénère uniquement aujourd'hui + les jours futurs selon les préférences
+ * actuelles, en préservant les jours passés (historique figé).
+ */
+router.post('/regenerate-from-today', authMiddleware, validate(generateSchema), async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  const prefs = await prisma.userPreference.findUnique({ where: { userId } });
+
+  const options = {
+    userId,
+    budget: req.body.budget ?? prefs?.budget ?? 60,
+    goal: req.body.goal ?? prefs?.goal ?? 'healthy',
+    dietary: req.body.dietary ?? (prefs?.dietary as string[]) ?? [],
+    servings: req.body.servings ?? prefs?.servings ?? 2,
+  };
+
+  try {
+    const weekPlan = await regeneratePlanFromToday(options);
+    const shoppingList = await generateShoppingList(userId, weekPlan);
+
+    const recipeIds = new Set<string>();
+    weekPlan.days.forEach((d: any) => d.meals.forEach((m: any) => recipeIds.add(m.recipe.id)));
+    const recipes = await prisma.recipe.findMany({ where: { id: { in: [...recipeIds] } } });
+
+    res.json({
+      weekPlan,
+      shoppingList,
+      recipes: recipes.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        emoji: r.emoji,
+        time: r.timeMinutes,
+        servings: r.servings,
+        difficulty: r.difficulty,
+        ingredients: r.ingredients,
+        steps: r.steps,
+        nutrition: r.nutrition,
+        tags: r.tags,
+      })),
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: 'REGENERATION_FAILED', message: err.message });
   }
 });
 
