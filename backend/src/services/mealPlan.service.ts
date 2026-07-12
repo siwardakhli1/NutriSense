@@ -35,6 +35,24 @@ function toLocalDateStr(d: Date): string {
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 type MealType = typeof MEAL_TYPES[number];
 
+// Composition d'un repas complet : quelles composantes (rôles) pour chaque type.
+// Chaque rôle correspond à un tag présent sur les recettes du seed.
+const MEAL_COMPOSITION: Record<MealType, string[]> = {
+  breakfast: ['boisson', 'pdej_principal', 'fruit'],
+  lunch: ['entree', 'plat', 'dessert'],
+  dinner: ['plat', 'dessert'],
+};
+
+// Labels lisibles pour chaque rôle (affichés côté front).
+const ROLE_LABELS: Record<string, string> = {
+  boisson: 'Boisson',
+  pdej_principal: 'Principal',
+  fruit: 'Fruit',
+  entree: 'Entrée',
+  plat: 'Plat',
+  dessert: 'Dessert',
+};
+
 /**
  * Score une recette selon les préférences user.
  */
@@ -91,6 +109,125 @@ export function splitByMealType(recipes: Recipe[]): Record<MealType, Recipe[]> {
   return pools;
 }
 
+/**
+ * Construit un repas COMPOSÉ (entrée/plat/dessert, etc.) selon sa composition.
+ * Pour chaque rôle du repas, pioche la meilleure recette disponible qui porte
+ * le tag de ce rôle. Garde la rétrocompatibilité en exposant aussi `recipe`
+ * (= la composante principale : plat, ou pdej_principal, ou la 1ère dispo).
+ */
+function buildComposedMeal(
+  mealType: MealType,
+  pool: Recipe[],
+  usedRecipeIds: Set<string>,
+  dayIdx: number
+): any {
+  const roles = MEAL_COMPOSITION[mealType];
+  const components: any[] = [];
+
+  for (const role of roles) {
+    // Recettes du pool qui portent le tag de ce rôle
+    const roleRecipes = pool.filter((r) => ((r.tags as string[]) || []).includes(role));
+
+    // Si aucune recette pour ce rôle (régime très restrictif), on saute ce rôle
+    if (roleRecipes.length === 0) continue;
+
+    // Piocher la 1ère non utilisée, sinon rotation pour varier
+    let pick = roleRecipes.find((r) => !usedRecipeIds.has(r.id));
+    if (!pick) {
+      pick = roleRecipes[dayIdx % roleRecipes.length];
+    }
+    usedRecipeIds.add(pick.id);
+
+    components.push({
+      role,
+      roleLabel: ROLE_LABELS[role] || role,
+      recipe: {
+        id: pick.id,
+        name: pick.name,
+        emoji: pick.emoji,
+        time: pick.timeMinutes,
+        servings: pick.servings,
+        difficulty: pick.difficulty,
+        ingredients: pick.ingredients,
+        steps: pick.steps,
+        nutrition: pick.nutrition,
+        tags: pick.tags,
+      },
+    });
+  }
+
+  // Filet de sécurité : si aucune composante trouvée (pool vide),
+  // on retombe sur l'ancienne logique (1 recette du pool global).
+  if (components.length === 0) {
+    let pick = pool.find((r) => !usedRecipeIds.has(r.id)) || pool[dayIdx % Math.max(pool.length, 1)];
+    if (pick) {
+      usedRecipeIds.add(pick.id);
+      components.push({
+        role: 'plat',
+        roleLabel: 'Plat',
+        recipe: {
+          id: pick.id, name: pick.name, emoji: pick.emoji, time: pick.timeMinutes,
+          servings: pick.servings, difficulty: pick.difficulty, ingredients: pick.ingredients,
+          steps: pick.steps, nutrition: pick.nutrition, tags: pick.tags,
+        },
+      });
+    }
+  }
+
+  // Composante "principale" pour la rétrocompatibilité (ancien affichage lit meal.recipe)
+  const mainComponent =
+    components.find((c) => c.role === 'plat') ||
+    components.find((c) => c.role === 'pdej_principal') ||
+    components[0];
+
+  // Nutrition totale du repas = somme des composantes
+  const totalNutrition = components.reduce(
+    (acc, c) => ({
+      calories: acc.calories + (c.recipe.nutrition?.calories || 0),
+      protein: acc.protein + (c.recipe.nutrition?.protein || 0),
+      carbs: acc.carbs + (c.recipe.nutrition?.carbs || 0),
+      fat: acc.fat + (c.recipe.nutrition?.fat || 0),
+      fiber: acc.fiber + (c.recipe.nutrition?.fiber || 0),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+  );
+  const totalTime = components.reduce((acc, c) => acc + (c.recipe.time || 0), 0);
+
+  return {
+    id: generateId(),
+    type: mealType,
+    components,             // NOUVEAU : les composantes (entrée/plat/dessert...)
+    recipe: mainComponent ? mainComponent.recipe : null, // RÉTROCOMPAT : ancien champ
+    totalNutrition,        // NOUVEAU : nutrition cumulée du repas
+    totalTime,             // NOUVEAU : temps cumulé
+  };
+}
+
+/**
+ * Coût réel (€) d'un repas = somme du prix de tous les ingrédients
+ * de toutes ses composantes (entrée + plat + dessert...).
+ */
+function computeMealCost(meal: any): number {
+  const parts = (meal.components && meal.components.length > 0)
+    ? meal.components.map((c: any) => c.recipe)
+    : (meal.recipe ? [meal.recipe] : []);
+  let cost = 0;
+  for (const r of parts) {
+    for (const ing of (r?.ingredients || [])) {
+      cost += estimateIngredientPrice(ing);
+    }
+  }
+  return Math.round(cost * 10) / 10;
+}
+
+/**
+ * Coût réel (€) d'une journée = somme du coût de ses repas.
+ */
+function computeDayCost(meals: any[]): number {
+  const total = meals.reduce((s, m) => s + computeMealCost(m), 0);
+  return Math.round(total * 10) / 10;
+}
+
 export async function generateWeekPlan(options: GenerateOptions) {
   const allRecipes = await prisma.recipe.findMany();
 
@@ -137,45 +274,24 @@ export async function generateWeekPlan(options: GenerateOptions) {
 
     const meals: any[] = [];
     for (const mealType of MEAL_TYPES) {
-      // Chercher la 1ère recette non utilisée du pool
-      let pick = sortedPools[mealType].find((r) => !usedRecipeIds.has(r.id));
-
-      // Si tout le pool est épuisé (cas rare : peu de recettes pour ce régime),
-      // on réinitialise en autorisant les répétitions pour ce type de repas.
-      if (!pick) {
-        console.warn(`[MealPlan] Pool ${mealType} épuisé, autorisation des répétitions.`);
-        pick = sortedPools[mealType][dayIdx % sortedPools[mealType].length];
-      }
-
-      usedRecipeIds.add(pick.id);
-
-      meals.push({
-        id: generateId(),
-        type: mealType,
-        recipe: {
-          id: pick.id,
-          name: pick.name,
-          emoji: pick.emoji,
-          time: pick.timeMinutes,
-          servings: pick.servings,
-          difficulty: pick.difficulty,
-          ingredients: pick.ingredients,
-          steps: pick.steps,
-          nutrition: pick.nutrition,
-          tags: pick.tags,
-        },
-      });
+      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx);
+      meals.push(meal);
     }
 
     days.push({
       date: toLocalDateStr(currentDate),
       meals,
+      cost: computeDayCost(meals),
+      mealCosts: {
+        breakfast: computeMealCost(meals.find((m) => m.type === 'breakfast')),
+        lunch: computeMealCost(meals.find((m) => m.type === 'lunch')),
+        dinner: computeMealCost(meals.find((m) => m.type === 'dinner')),
+      },
     });
   }
 
-  const totalMeals = 21;
-  const avgMealCost = options.goal === 'budget' ? 2.5 : options.goal === 'muscle' ? 4.5 : 3.5;
-  const estimatedCost = Math.round(totalMeals * avgMealCost * (options.servings / 2) * 10) / 10;
+  // Coût réel de la semaine = somme des coûts réels de chaque jour.
+  const estimatedCost = Math.round(days.reduce((s: number, d: any) => s + (d.cost || 0), 0) * 10) / 10;
 
   const weekPlanId = generateId();
   await prisma.weekPlan.create({
@@ -262,29 +378,19 @@ export async function regeneratePlanFromToday(options: GenerateOptions) {
   const regeneratedDays = daysToRegen.map((day: any, dayIdx: number) => {
     const meals: any[] = [];
     for (const mealType of MEAL_TYPES) {
-      let pick = sortedPools[mealType].find((r) => !usedRecipeIds.has(r.id));
-      if (!pick) {
-        pick = sortedPools[mealType][dayIdx % sortedPools[mealType].length];
-      }
-      usedRecipeIds.add(pick.id);
-      meals.push({
-        id: generateId(),
-        type: mealType,
-        recipe: {
-          id: pick.id,
-          name: pick.name,
-          emoji: pick.emoji,
-          time: pick.timeMinutes,
-          servings: pick.servings,
-          difficulty: pick.difficulty,
-          ingredients: pick.ingredients,
-          steps: pick.steps,
-          nutrition: pick.nutrition,
-          tags: pick.tags,
-        },
-      });
+      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx);
+      meals.push(meal);
     }
-    return { date: day.date, meals };
+    return {
+      date: day.date,
+      meals,
+      cost: computeDayCost(meals),
+      mealCosts: {
+        breakfast: computeMealCost(meals.find((m) => m.type === 'breakfast')),
+        lunch: computeMealCost(meals.find((m) => m.type === 'lunch')),
+        dinner: computeMealCost(meals.find((m) => m.type === 'dinner')),
+      },
+    };
   });
 
   const mergedDays = [...pastDays, ...regeneratedDays].sort((a, b) =>
@@ -364,20 +470,150 @@ export async function generateShoppingList(userId: string, weekPlan: any) {
   };
 }
 
+/**
+ * Prix indicatifs français (€) par ingrédient.
+ * Référence : prix moyen supermarché français, ramené à l'unité de base
+ * (au kg pour les solides, au litre pour les liquides, à la pièce pour le reste).
+ * Utilisé pour estimer le coût réel d'une recette selon les quantités.
+ */
+// Poids moyen (kg) d'une pièce pour les fruits/légumes vendus au kg
+// mais comptés en pièces dans les recettes.
+const PIECE_WEIGHTS: Record<string, number> = {
+  'banane': 0.12, 'pomme': 0.15, 'pommes': 0.15, 'orange': 0.15, 'oranges': 0.15,
+  'kiwi': 0.08, 'courgettes': 0.2, 'carottes': 0.12, 'tomates': 0.12,
+  'brocolis': 0.3, 'aubergine': 0.3, 'poivrons': 0.15, 'oignon': 0.11, 'potiron': 1,
+};
+
+const INGREDIENT_PRICES: Record<string, { price: number; base: 'kg' | 'l' | 'piece' }> = {
+  // Protéines
+  'agneau': { price: 16, base: 'kg' },
+  'agneau haché': { price: 15, base: 'kg' },
+  'blanc de poulet': { price: 12, base: 'kg' },
+  'cuisses de poulet': { price: 4, base: 'kg' },
+  'pavé de saumon': { price: 30, base: 'kg' },
+  'crevettes': { price: 18, base: 'kg' },
+  'oeufs': { price: 0.35, base: 'piece' },
+  'œufs': { price: 0.35, base: 'piece' },
+  'pois chiches': { price: 3, base: 'kg' },
+  'feta': { price: 13, base: 'kg' },
+  // Féculents
+  'semoule': { price: 2, base: 'kg' },
+  'semoule fine': { price: 2, base: 'kg' },
+  'riz': { price: 2, base: 'kg' },
+  'riz basmati': { price: 3, base: 'kg' },
+  'riz complet': { price: 3, base: 'kg' },
+  'spaghetti': { price: 1.5, base: 'kg' },
+  'nouilles': { price: 3, base: 'kg' },
+  'farine': { price: 1, base: 'kg' },
+  'pain de campagne': { price: 0.4, base: 'piece' },
+  'flocons d\'avoine': { price: 2.5, base: 'kg' },
+  'granola': { price: 8, base: 'kg' },
+  // Fruits & légumes
+  'tomates': { price: 4.2, base: 'kg' },
+  'courgettes': { price: 2.5, base: 'kg' },
+  'carottes': { price: 1.5, base: 'kg' },
+  'poivrons': { price: 4, base: 'kg' },
+  'aubergine': { price: 3, base: 'kg' },
+  'potiron': { price: 2, base: 'kg' },
+  'oignon': { price: 1.5, base: 'kg' },
+  'ail': { price: 8, base: 'kg' },
+  'concombre': { price: 1, base: 'piece' },
+  'brocolis': { price: 3, base: 'kg' },
+  'epinards': { price: 4, base: 'kg' },
+  'épinards': { price: 4, base: 'kg' },
+  'champignons de paris': { price: 5, base: 'kg' },
+  'roquette': { price: 12, base: 'kg' },
+  'avocat': { price: 1.5, base: 'piece' },
+  'banane': { price: 1, base: 'kg' },
+  'pomme': { price: 2.8, base: 'kg' },
+  'pommes': { price: 2.8, base: 'kg' },
+  'orange': { price: 2.5, base: 'kg' },
+  'oranges': { price: 2.5, base: 'kg' },
+  'kiwi': { price: 4, base: 'kg' },
+  'fraises': { price: 6, base: 'kg' },
+  'raisin': { price: 4, base: 'kg' },
+  'citron': { price: 0.4, base: 'piece' },
+  'citron confit': { price: 8, base: 'kg' },
+  'menthe fraîche': { price: 1, base: 'piece' },
+  'basilic': { price: 1.5, base: 'piece' },
+  'persil': { price: 1, base: 'piece' },
+  'gingembre': { price: 10, base: 'kg' },
+  'olives noires': { price: 8, base: 'kg' },
+  'olives vertes': { price: 8, base: 'kg' },
+  'pâte de dattes': { price: 6, base: 'kg' },
+  // Produits laitiers
+  'lait demi-écrémé': { price: 1, base: 'l' },
+  'lait végétal': { price: 2, base: 'l' },
+  'crème végétale': { price: 3, base: 'l' },
+  'yaourt grec': { price: 4, base: 'kg' },
+  'yaourt nature': { price: 2, base: 'kg' },
+  'fromage blanc': { price: 3, base: 'kg' },
+  'fromage râpé': { price: 10, base: 'kg' },
+  'beurre': { price: 8, base: 'kg' },
+  // Épicerie
+  'huile d\'olive': { price: 8, base: 'l' },
+  'miel': { price: 12, base: 'kg' },
+  'sucre': { price: 1, base: 'kg' },
+  'cannelle': { price: 40, base: 'kg' },
+  'curry': { price: 30, base: 'kg' },
+  'ras el-hanout': { price: 40, base: 'kg' },
+  'sauce soja': { price: 5, base: 'l' },
+  'tahini': { price: 10, base: 'kg' },
+  'lait de coco': { price: 3, base: 'l' },
+  'chocolat noir': { price: 12, base: 'kg' },
+  'amandes': { price: 20, base: 'kg' },
+  'noix': { price: 18, base: 'kg' },
+  'café moulu': { price: 15, base: 'kg' },
+  'thé vert': { price: 30, base: 'kg' },
+  'levure chimique': { price: 0.2, base: 'piece' },
+  'eau': { price: 0, base: 'l' },
+};
+
+/**
+ * Estime le prix réel (€) d'un ingrédient selon sa quantité et l'unité,
+ * à partir des prix français indicatifs ci-dessus.
+ */
 export function estimateIngredientPrice(ing: any): number {
-  const priceMap: Record<string, number> = {
-    fruits_legumes: 2, feculents: 1.5, proteines: 4,
-    produits_laitiers: 2.5, epicerie: 1, autres: 2,
-  };
-  const category = ing.category || 'autres';
-  const basePrice = priceMap[category] || 2;
+  const name = (ing.name || '').trim().toLowerCase();
+  const entry = INGREDIENT_PRICES[name];
   const qty = parseFloat(ing.quantity) || 1;
   const unit = (ing.unit || '').toLowerCase();
 
-  let multiplier = 1;
-  if (unit === 'g' || unit === 'ml') multiplier = qty / 200;
-  else if (unit === 'kg' || unit === 'l') multiplier = qty * 5;
-  else multiplier = qty * 0.5;
+  // Ingrédient inconnu : petit prix forfaitaire prudent
+  if (!entry) return 0.5;
 
-  return Math.round(basePrice * Math.max(multiplier, 0.5) * 10) / 10;
+  let cost = 0;
+  if (entry.base === 'kg') {
+    // prix au kg → convertir la quantité en kg
+    let kg = qty / 1000;                       // g par défaut
+    if (unit === 'kg') kg = qty;
+    else if (unit === 'g') kg = qty / 1000;
+    else if (unit === 'c.à.s') kg = qty * 0.015;   // 1 c.à.s ≈ 15g
+    else if (unit === 'c.à.c') kg = qty * 0.005;   // 1 c.à.c ≈ 5g
+    else if (unit === 'pincée' || unit === 'pincee') kg = 0.001;
+    else if (unit === 'sachet') kg = 0.011;        // sachet levure ≈ 11g
+    else if (unit === 'bouquet') kg = 0.03;        // bouquet herbes ≈ 30g
+    else if (unit === 'gousses' || unit === 'gousse') kg = qty * 0.005;
+    else if (unit === 'feuilles') kg = qty * 0.001;
+    else if (unit === 'pièces' || unit === 'pièce') {
+      // fruit/légume vendu au kg mais compté en pièces → convertir par poids moyen
+      kg = qty * (PIECE_WEIGHTS[name] || 0.15);
+    }
+    else kg = qty * 0.05;                          // autres unités → ~50g
+    cost = entry.price * kg;
+  } else if (entry.base === 'l') {
+    let l = qty / 1000;                        // ml par défaut
+    if (unit === 'l') l = qty;
+    else if (unit === 'ml') l = qty / 1000;
+    else if (unit === 'c.à.s') l = qty * 0.015;
+    else if (unit === 'c.à.c') l = qty * 0.005;
+    else l = 0.05;
+    cost = entry.price * l;
+  } else {
+    // prix à la pièce
+    cost = entry.price * qty;
+  }
+
+  // Arrondi à 10 centimes, minimum 0,10€ pour un ingrédient réel
+  return Math.max(Math.round(cost * 10) / 10, 0.1);
 }

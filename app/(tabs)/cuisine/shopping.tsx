@@ -30,6 +30,8 @@ export default function ShoppingScreen() {
   const items = shoppingList?.items ?? [];
   const totalItems = items.length;
   const checkedCount = items.filter((i) => i.checked).length;
+  // Vrai total de la semaine = somme des prix estimés de tous les articles
+  const estimatedTotal = items.reduce((sum, i) => sum + ((i as any).estimatedPrice || 0), 0);
 
   // Grouper par catégorie
   const grouped = items.reduce((acc, item) => {
@@ -83,7 +85,7 @@ export default function ShoppingScreen() {
               {checkedCount} / {totalItems} {t.shopping.articles}
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
-              ~{preferences.budget}€ {t.shopping.estimated}
+              ≈ {estimatedTotal.toFixed(2)}€ {t.shopping.estimated}
             </Text>
           </View>
           <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.15)' }}>

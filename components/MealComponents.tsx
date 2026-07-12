@@ -456,3 +456,302 @@ export function StatCard({ label, value, unit, icon, color }: StatCardProps) {
     </View>
   );
 }
+
+// ==========================================
+// COMPOSED MEAL CARD — repas complet, design pro
+// Flèche seule + icônes silhouettes + check INDIVIDUEL par plat.
+// Chaque composante est loggée séparément → calcul de calories juste.
+// ==========================================
+interface ComposedMealCardProps {
+  label: string;
+  labelIcon?: string;      // (conservé pour compat, non utilisé : on met une icône Ionicons)
+  meal: Meal;
+  date?: string;
+  defaultOpen?: boolean;
+  onPressComponent?: (recipeId: string) => void;
+  onLogged?: () => void;
+}
+
+// Icône silhouette (Ionicons outline) selon le type de repas
+function mealIconName(type: string): any {
+  if (type === 'breakfast') return 'cafe-outline';
+  if (type === 'lunch') return 'sunny-outline';
+  if (type === 'dinner') return 'moon-outline';
+  return 'restaurant-outline';
+}
+
+// Couleur de la barre latérale : nuances de vert selon le repas
+function mealBarColor(type: string, colors: any): string {
+  if (type === 'breakfast') return colors.primaryLight;  // vert clair
+  if (type === 'lunch') return colors.primary;           // vert moyen
+  if (type === 'dinner') return colors.primaryDark;      // vert foncé
+  return colors.primary;
+}
+
+export function ComposedMealCard({
+  label,
+  meal,
+  date,
+  defaultOpen = false,
+  onPressComponent,
+  onLogged,
+}: ComposedMealCardProps) {
+  const { colors } = useTheme();
+  const [open, setOpen] = useState(defaultOpen);
+  // Map recipeId -> logId pour les composantes cochées
+  const [eatenMap, setEatenMap] = useState<Record<string, string>>({});
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+
+  const components = meal.components || [];
+
+  // Fuseau France pour bloquer le futur
+  const todayStr = (() => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date());
+    } catch {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    }
+  })();
+  const isFuture = !!date && date > todayStr;
+
+  // Calories totales du repas et calories mangées (composantes cochées)
+  const totalCalories = components.reduce((s, c) => s + (c.recipe.nutrition?.calories || 0), 0);
+  const eatenCalories = components.reduce(
+    (s, c) => s + (eatenMap[c.recipe.id] ? (c.recipe.nutrition?.calories || 0) : 0),
+    0
+  );
+  const totalTime = components.reduce((s, c) => s + (c.recipe.time || 0), 0);
+  const allEaten = components.length > 0 && components.every((c) => eatenMap[c.recipe.id]);
+
+  // Au chargement : retrouver quelles composantes sont déjà loggées
+  useEffect(() => {
+    if (!date || components.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const res = await api.get<{ logs: any[] }>('/nutrition/logs?days=365');
+      if (cancelled || !res.success || !res.data) return;
+      const norm = (s: string) => (s || '').trim().toLowerCase();
+      const map: Record<string, string> = {};
+      for (const comp of components) {
+        const found = res.data.logs.find(
+          (l: any) =>
+            norm(l.label) === norm(comp.recipe.name) &&
+            l.mealType === meal.type &&
+            typeof l.loggedAt === 'string' &&
+            l.loggedAt.slice(0, 10) === date
+        );
+        if (found) map[comp.recipe.id] = found.id;
+      }
+      if (!cancelled) setEatenMap(map);
+    })();
+    return () => { cancelled = true; };
+  }, [meal.type, date, components.length]);
+
+  // Cocher / décocher UNE composante
+  const toggleComponent = async (comp: any) => {
+    if (!date || isFuture || loadingIds.has(comp.recipe.id)) return;
+    setLoadingIds((s) => new Set(s).add(comp.recipe.id));
+    const existingLogId = eatenMap[comp.recipe.id];
+
+    if (existingLogId) {
+      // Décocher : supprimer le log
+      const res = await api.delete(`/nutrition/log/${existingLogId}`);
+      if (res.success) {
+        setEatenMap((m) => {
+          const copy = { ...m };
+          delete copy[comp.recipe.id];
+          return copy;
+        });
+        onLogged?.();
+      }
+    } else {
+      // Cocher : créer le log de cette composante
+      const loggedAt = date + 'T12:00:00.000Z';
+      const n = comp.recipe.nutrition || {};
+      const res = await api.post<{ success: boolean; log: any }>('/nutrition/log', {
+        source: 'recipe',
+        label: comp.recipe.name,
+        mealType: meal.type,
+        calories: n.calories || 0,
+        protein: n.protein || 0,
+        carbs: n.carbs || 0,
+        fat: n.fat || 0,
+        fiber: n.fiber || 0,
+        loggedAt,
+      });
+      if (res.success && (res.data as any)?.log) {
+        setEatenMap((m) => ({ ...m, [comp.recipe.id]: (res.data as any).log.id }));
+        onLogged?.();
+      } else {
+        Alert.alert('Erreur', "Impossible d'enregistrer ce plat");
+      }
+    }
+    setLoadingIds((s) => {
+      const copy = new Set(s);
+      copy.delete(comp.recipe.id);
+      return copy;
+    });
+  };
+
+  // Rétrocompat : ancien format sans composantes → MealCard classique
+  if (components.length === 0) {
+    return (
+      <MealCard
+        label={label}
+        meal={meal}
+        date={date}
+        onLogged={onLogged}
+        onPress={() => onPressComponent?.(meal.recipe?.id)}
+      />
+    );
+  }
+
+  // Sous-titre de l'en-tête : calories mangées si on a commencé, sinon total
+  const headerSub =
+    eatenCalories > 0
+      ? `${eatenCalories} / ${totalCalories} kcal mangés`
+      : `${totalCalories} kcal · ${totalTime} min`;
+
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderRadius: 12,
+          borderWidth: allEaten ? 2 : 1,
+          borderColor: allEaten ? colors.primary : colors.border,
+          overflow: 'hidden',
+          flexDirection: 'row',
+        }}
+      >
+        {/* Barre de couleur latérale (nuance de vert selon le repas) */}
+        <View style={{ width: 4, backgroundColor: mealBarColor(meal.type, colors) }} />
+
+        {/* Contenu de la carte */}
+        <View style={{ flex: 1 }}>
+        {/* En-tête : icône silhouette + nom + flèche seule */}
+        <TouchableOpacity
+          onPress={() => setOpen((o) => !o)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}, ${open ? 'replier' : 'déplier'}`}
+          style={{
+            padding: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <Ionicons name={mealIconName(meal.type)} size={22} color={colors.textSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{label}</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{headerSub}</Text>
+          </View>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* Composantes avec case à cocher individuelle */}
+        {open && (
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+            {components.map((comp, idx) => {
+              const isEaten = !!eatenMap[comp.recipe.id];
+              // Boisson et fruit sont trop simples pour avoir une fiche recette
+              const isClickable = comp.role !== 'boisson' && comp.role !== 'fruit';
+              return (
+                <View
+                  key={`${comp.role}-${idx}`}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 11,
+                    paddingHorizontal: 14,
+                    borderBottomWidth: idx < components.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  {/* Case à cocher */}
+                  <TouchableOpacity
+                    onPress={() => toggleComponent(comp)}
+                    disabled={isFuture || loadingIds.has(comp.recipe.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isEaten }}
+                    accessibilityLabel={`${comp.roleLabel} ${comp.recipe.name}, ${isEaten ? 'mangé' : 'à cocher'}`}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 7,
+                      backgroundColor: isEaten ? colors.primary : 'transparent',
+                      borderWidth: isEaten ? 0 : 2,
+                      borderColor: isFuture ? colors.border : colors.textMuted,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: isFuture ? 0.4 : 1,
+                    }}
+                  >
+                    {isEaten && <Ionicons name="checkmark" size={16} color="#fff" />}
+                    {isFuture && !isEaten && <Ionicons name="time-outline" size={14} color={colors.textMuted} />}
+                  </TouchableOpacity>
+
+                  {/* Photo du plat (cliquable seulement pour les vraies recettes) */}
+                  <TouchableOpacity
+                    onPress={() => isClickable && onPressComponent?.(comp.recipe.id)}
+                    activeOpacity={isClickable ? 0.7 : 1}
+                    disabled={!isClickable}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 10,
+                      backgroundColor: colors.primaryLight,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <RecipeImage
+                      name={comp.recipe.name}
+                      fallbackEmoji={comp.recipe.emoji}
+                      style={{ fontSize: 24 }}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Nom + rôle (cliquable seulement pour les vraies recettes) */}
+                  <TouchableOpacity
+                    onPress={() => isClickable && onPressComponent?.(comp.recipe.id)}
+                    activeOpacity={isClickable ? 0.7 : 1}
+                    disabled={!isClickable}
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {comp.roleLabel}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: colors.text,
+                        marginTop: 1,
+                        textDecorationLine: isEaten ? 'line-through' : 'none',
+                      }}
+                    >
+                      {comp.recipe.name}
+                    </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                    {comp.recipe.nutrition?.calories || 0} kcal
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+        </View>
+      </View>
+    </View>
+  );
+}

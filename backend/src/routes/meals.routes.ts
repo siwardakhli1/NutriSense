@@ -41,7 +41,11 @@ router.post('/generate', authMiddleware, validate(generateSchema), async (req: A
 
     // On renvoie aussi les recettes uniques utilisées
     const recipeIds = new Set<string>();
-    weekPlan.days.forEach((d: any) => d.meals.forEach((m: any) => recipeIds.add(m.recipe.id)));
+    weekPlan.days.forEach((d: any) => d.meals.forEach((m: any) => {
+      if (m.recipe?.id) recipeIds.add(m.recipe.id);
+      // Ajouter aussi les recettes de toutes les composantes (entrée/plat/dessert...)
+      (m.components || []).forEach((c: any) => c.recipe?.id && recipeIds.add(c.recipe.id));
+    }));
     const recipes = await prisma.recipe.findMany({ where: { id: { in: [...recipeIds] } } });
 
     res.json({
@@ -88,7 +92,11 @@ router.post('/regenerate-from-today', authMiddleware, validate(generateSchema), 
     const shoppingList = await generateShoppingList(userId, weekPlan);
 
     const recipeIds = new Set<string>();
-    weekPlan.days.forEach((d: any) => d.meals.forEach((m: any) => recipeIds.add(m.recipe.id)));
+    weekPlan.days.forEach((d: any) => d.meals.forEach((m: any) => {
+      if (m.recipe?.id) recipeIds.add(m.recipe.id);
+      // Ajouter aussi les recettes de toutes les composantes (entrée/plat/dessert...)
+      (m.components || []).forEach((c: any) => c.recipe?.id && recipeIds.add(c.recipe.id));
+    }));
     const recipes = await prisma.recipe.findMany({ where: { id: { in: [...recipeIds] } } });
 
     res.json({
@@ -134,7 +142,10 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response) =
   // Recettes utilisées dans le plan
   const days = weekPlan.days as any[];
   const recipeIds = new Set<string>();
-  days.forEach((d) => d.meals.forEach((m: any) => recipeIds.add(m.recipe.id)));
+  days.forEach((d: any) => d.meals.forEach((m: any) => {
+    if (m.recipe?.id) recipeIds.add(m.recipe.id);
+    (m.components || []).forEach((c: any) => c.recipe?.id && recipeIds.add(c.recipe.id));
+  }));
   const recipes = await prisma.recipe.findMany({ where: { id: { in: [...recipeIds] } } });
 
   res.json({

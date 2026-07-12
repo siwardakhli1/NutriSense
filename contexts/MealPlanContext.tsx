@@ -1,5 +1,5 @@
 // CONTEXT - MealPlanContext
-import React, { createContext, useCallback, useEffect, useReducer } from 'react';
+import React, { createContext, useCallback, useEffect, useReducer, useRef } from 'react';
 import {
   WeekPlan, ShoppingList, UserPreferences, Goal, DietaryPreference, Recipe,
 } from '@/types';
@@ -95,6 +95,11 @@ export const MealPlanContext = createContext<MealPlanContextType>({
 export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(mealPlanReducer, initialState);
 
+  // Ref qui suit toujours les dernières préférences, pour les lire dans loadCurrent
+  // sans le faire dépendre de state.preferences (sinon il se relancerait à chaque changement).
+  const preferencesRef = useRef(state.preferences);
+  useEffect(() => { preferencesRef.current = state.preferences; }, [state.preferences]);
+
   // Charge le plan courant + préférences au démarrage
   const loadCurrent = useCallback(async () => {
     // Préférences
@@ -114,7 +119,14 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
       const plan = planRes.data.weekPlan;
 
       // Détecter si le plan est expiré
-      const isExpired = plan && new Date(plan.endDate).getTime() < Date.now();
+      // Le plan est expiré seulement si sa date de fin est STRICTEMENT avant aujourd'hui
+      // (comparaison sur le jour local, pas l'heure — un plan finissant aujourd'hui reste valide).
+      const todayStr = (() => {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+      })();
+      const endStr = plan ? String(plan.endDate).slice(0, 10) : '';
+      const isExpired = !!plan && endStr < todayStr;
 
       if (isExpired) {
         // Plan expiré → régénération automatique silencieuse
@@ -125,10 +137,10 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
             shoppingList: ShoppingList;
             recipes: Recipe[];
           }>('/meals/generate', {
-            budget: state.preferences.budget || 100,
-            goal: state.preferences.goal || 'healthy',
-            dietary: state.preferences.dietary || [],
-            servings: state.preferences.servings || 2,
+            budget: preferencesRef.current.budget || 100,
+            goal: preferencesRef.current.goal || 'healthy',
+            dietary: preferencesRef.current.dietary || [],
+            servings: preferencesRef.current.servings || 2,
           });
           if (regen.success && regen.data) {
             dispatch({ type: 'SET_PLAN', payload: regen.data.weekPlan });
@@ -145,8 +157,10 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_SHOPPING', payload: planRes.data.shoppingList });
       dispatch({ type: 'SET_RECIPES', payload: planRes.data.recipes });
     }
-  }, [state.preferences]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chargement UNIQUE au démarrage : le plan ne se recharge pas à chaque changement de préférence.
 
+  // Charge le plan une seule fois au montage de l'app.
   useEffect(() => { loadCurrent(); }, [loadCurrent]);
 
   const generatePlan = useCallback(async () => {

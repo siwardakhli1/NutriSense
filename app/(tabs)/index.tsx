@@ -3,13 +3,14 @@
 // ==========================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
 import { useAccelerometer } from '@/hooks/useNativeAPIs';
 import { useShare } from '@/hooks/useShare';
-import { MealCard, DaySelector, BudgetCard, StatCard } from '@/components/MealComponents';
+import { MealCard, ComposedMealCard, DaySelector, BudgetCard, StatCard } from '@/components/MealComponents';
+import { api } from '@/services/api';
 import { LoadingSpinner, ErrorDisplay } from '@/components/ui';
 import { Spacing, FontSize } from '@/constants/Colors';
 
@@ -34,6 +35,8 @@ export default function PlanScreen() {
 
   const [selectedDay, setSelectedDay] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAllIngredients, setShowAllIngredients] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
   // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
   // ses clics ne sont JAMAIS écrasés.
@@ -59,33 +62,30 @@ export default function PlanScreen() {
     }
   }, [isShaking]);
 
-  // Générer au premier chargement si pas de plan
+  // Marquer la fin du chargement initial
   useEffect(() => {
-    if (!weekPlan && !isLoading) {
+    if (!isLoading && !initialLoadDone) setInitialLoadDone(true);
+  }, [isLoading, initialLoadDone]);
+
+  // Générer SEULEMENT après le chargement initial, s'il n'y a vraiment aucun plan
+  useEffect(() => {
+    if (initialLoadDone && !weekPlan && !isLoading) {
       generatePlan();
     }
-  }, []);
+  }, [initialLoadDone, weekPlan, isLoading]);
 
-  // Auto-régénération si la semaine est terminée
+  // Auto-régénération SEULEMENT si la semaine est réellement terminée (par jour local)
   useEffect(() => {
-    if (!weekPlan?.endDate || isLoading) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const endDate = new Date(weekPlan.endDate);
-    endDate.setHours(0, 0, 0, 0);
-
-    if (endDate < today) {
+    if (!weekPlan?.endDate || isLoading || !initialLoadDone) return;
+    const todayStr = getTodayStr();
+    const endStr = String(weekPlan.endDate).slice(0, 10);
+    if (endStr < todayStr) {
       console.log('[Plan] Semaine expirée, régénération auto...');
       generatePlan();
     }
-  }, [weekPlan?.endDate]);
+  }, [weekPlan?.endDate, initialLoadDone]);
 
-  // Rafraîchir le plan à chaque fois que l'utilisateur revient sur ce tab
-  useFocusEffect(
-    React.useCallback(() => {
-      refreshPlan();
-    }, [])
-  );
+  // (Retiré : le refresh auto à chaque focus rechargeait le plan inutilement)
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -106,8 +106,30 @@ export default function PlanScreen() {
   const lunchMeal = dayPlan?.meals.find((m) => m.type === 'lunch');
   const dinnerMeal = dayPlan?.meals.find((m) => m.type === 'dinner');
 
-  const totalCal = dayPlan?.meals.reduce((sum, m) => sum + m.recipe.nutrition.calories, 0) ?? 0;
-  const totalTime = dayPlan?.meals.reduce((sum, m) => sum + m.recipe.time, 0) ?? 0;
+  // Liste des ingrédients uniques du jour (toutes composantes)
+  const dayIngredients = (() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const m of (dayPlan?.meals || []) as any[]) {
+      const parts = (m.components && m.components.length > 0)
+        ? m.components.map((c: any) => c.recipe)
+        : (m.recipe ? [m.recipe] : []);
+      for (const r of parts) {
+        for (const ing of (r?.ingredients || []) as any[]) {
+          const nm = (ing.name || '').trim();
+          if (nm && !seen.has(nm.toLowerCase())) {
+            seen.add(nm.toLowerCase());
+            names.push(nm);
+          }
+        }
+      }
+    }
+    return names;
+  })();
+
+  // Coût réel du jour (calculé côté backend)
+  const dayCost = (dayPlan as any)?.cost ?? 0;
+  const mealCosts = (dayPlan as any)?.mealCosts ?? { breakfast: 0, lunch: 0, dinner: 0 };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -198,46 +220,98 @@ export default function PlanScreen() {
         {/* Meals */}
         <View style={{ padding: Spacing.lg, paddingTop: Spacing.lg }}>
           {breakfastMeal && (
-            <MealCard
+            <ComposedMealCard
               key={`breakfast-${dayPlan?.date}`}
               label={t.plan.breakfast}
               labelIcon="🌅"
               meal={breakfastMeal}
               date={dayPlan?.date}
-              onPress={() => router.push(`/recipe/${breakfastMeal.recipe.id}`)}
+              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
             />
           )}
 
           {lunchMeal && (
-            <MealCard
+            <ComposedMealCard
               key={`lunch-${dayPlan?.date}`}
               label={t.plan.lunch}
               labelIcon="☀️"
               meal={lunchMeal}
               date={dayPlan?.date}
-              onPress={() => router.push(`/recipe/${lunchMeal.recipe.id}`)}
+              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
             />
           )}
 
           {dinnerMeal && (
-            <MealCard
+            <ComposedMealCard
               key={`dinner-${dayPlan?.date}`}
               label={t.plan.dinner}
               labelIcon="🌙"
               meal={dinnerMeal}
               date={dayPlan?.date}
-              onPress={() => router.push(`/recipe/${dinnerMeal.recipe.id}`)}
+              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
             />
           )}
 
-          {/* Budget card */}
-          <BudgetCard budget={preferences.budget} spent={weekPlan?.estimatedCost ?? 0} />
+          {/* Section ingrédients du jour */}
+          <Text style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: 20, marginBottom: 10 }}>
+            Ingrédients du jour
+          </Text>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="cart-outline" size={20} color={colors.primary} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Courses à prévoir</Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginLeft: 'auto' }}>
+                {dayIngredients.length} ingrédients
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {(showAllIngredients ? dayIngredients : dayIngredients.slice(0, 8)).map((ing, i) => (
+                <View key={i} style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14 }}>
+                  <Text style={{ fontSize: 12, color: colors.primary }}>{ing}</Text>
+                </View>
+              ))}
+              {!showAllIngredients && dayIngredients.length > 8 && (
+                <TouchableOpacity onPress={() => setShowAllIngredients(true)} style={{ backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14 }}>
+                  <Text style={{ fontSize: 12, color: '#fff', fontWeight: '600' }}>+ {dayIngredients.length - 8} autres</Text>
+                </TouchableOpacity>
+              )}
+              {showAllIngredients && dayIngredients.length > 8 && (
+                <TouchableOpacity onPress={() => setShowAllIngredients(false)} style={{ backgroundColor: colors.surfaceVariant, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>Réduire</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
-          {/* Daily stats */}
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            <StatCard value={String(totalCal)} unit="kcal" label={t.plan.calories} />
-            <StatCard value={String(totalTime)} unit={t.plan.min} label={t.plan.totalTime} />
-            <StatCard value="~6" unit="€" label={t.plan.cost} />
+          {/* Coût du jour — détail par repas */}
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 16, marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="wallet-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>Coût du jour</Text>
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.primary }}>≈ {dayCost.toFixed(2)}€</Text>
+            </View>
+            <View style={{ gap: 7 }}>
+              {breakfastMeal && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>🌅 {t.plan.breakfast}</Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>{(mealCosts.breakfast || 0).toFixed(2)}€</Text>
+                </View>
+              )}
+              {lunchMeal && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>☀️ {t.plan.lunch}</Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>{(mealCosts.lunch || 0).toFixed(2)}€</Text>
+                </View>
+              )}
+              {dinnerMeal && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>🌙 {t.plan.dinner}</Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>{(mealCosts.dinner || 0).toFixed(2)}€</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>

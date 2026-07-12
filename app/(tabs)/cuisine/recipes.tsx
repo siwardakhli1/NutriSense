@@ -17,9 +17,13 @@ export default function RecipesScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
 
-  const filtered = recipes.filter((r) =>
-    r.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = recipes.filter((r) => {
+    // Exclure les composantes trop simples (boissons, fruits) : ce ne sont pas de vraies recettes
+    const tags = (r.tags as string[]) || [];
+    if (tags.includes('boisson') || tags.includes('fruit')) return false;
+    // Filtre de recherche par nom
+    return r.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   const renderRecipe = ({ item }: { item: Recipe }) => (
     <Card

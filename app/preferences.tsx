@@ -171,63 +171,6 @@ export default function PreferencesScreen() {
             })}
           </View>
 
-          {/* Budget */}
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 10 }}>
-            💰 Budget hebdomadaire
-          </Text>
-          <Card style={{ marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity
-                onPress={() => setBudget((b) => Math.max(10, b - 10))}
-                style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: colors.surfaceVariant,
-                  justifyContent: 'center', alignItems: 'center',
-                }}
-              >
-                <Ionicons name="remove" size={22} color={colors.text} />
-              </TouchableOpacity>
-
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={{ fontSize: 32, fontWeight: '800', color: colors.primary }}>
-                  {budget} €
-                </Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>par semaine</Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setBudget((b) => Math.min(500, b + 10))}
-                style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: colors.surfaceVariant,
-                  justifyContent: 'center', alignItems: 'center',
-                }}
-              >
-                <Ionicons name="add" size={22} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Presets */}
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 12, justifyContent: 'center' }}>
-              {[30, 50, 80, 120].map((preset) => (
-                <TouchableOpacity
-                  key={preset}
-                  onPress={() => setBudget(preset)}
-                  style={{
-                    paddingHorizontal: 12, paddingVertical: 6,
-                    borderRadius: 14,
-                    backgroundColor: budget === preset ? colors.primary : colors.surfaceVariant,
-                  }}
-                >
-                  <Text style={{
-                    fontSize: 12, fontWeight: '600',
-                    color: budget === preset ? '#fff' : colors.text,
-                  }}>{preset}€</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Card>
-
           {/* Régimes alimentaires */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Ionicons name="leaf-outline" size={18} color={colors.text} />

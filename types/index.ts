@@ -57,10 +57,25 @@ export interface Recipe {
   imageUrl?: string;
 }
 
+export interface MealComponent {
+  role: string;        // 'boisson' | 'pdej_principal' | 'fruit' | 'entree' | 'plat' | 'dessert'
+  roleLabel: string;   // Label lisible : 'Entrée', 'Plat', 'Dessert'...
+  recipe: Recipe;
+}
+
 export interface Meal {
   id: string;
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  recipe: Recipe;
+  recipe: Recipe;                    // Composante principale (rétrocompat)
+  components?: MealComponent[];      // NOUVEAU : composantes du repas complet
+  totalNutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+  totalTime?: number;
 }
 
 export interface DayPlan {

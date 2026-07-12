@@ -54,7 +54,7 @@ export default function OnboardingWelcome() {
 
       <Button
         title={`${t.onboarding.start} →`}
-        onPress={() => router.push('/(onboarding)/budget')}
+        onPress={() => router.push('/(onboarding)/goal')}
         style={{ width: '100%' }}
       />
 
