@@ -9,7 +9,6 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { useTheme, useAuth, useLanguage } from '@/hooks/useAppContexts';
-import { useLocation } from '@/hooks/useNativeAPIs';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { LOCALE_LABELS, Locale } from '@/i18n';
@@ -35,7 +34,6 @@ function SettingsRow({
     <TouchableOpacity
       activeOpacity={onPress ? 0.7 : 1}
       onPress={onPress}
-      // Accessibilité RGAA : label descriptif + rôle button quand cliquable
       accessible={true}
       accessibilityRole={onPress ? 'button' : 'text'}
       accessibilityLabel={value ? `${label}, valeur : ${value}` : label}
@@ -47,7 +45,7 @@ function SettingsRow({
         paddingHorizontal: 4,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        minHeight: 48, // Cible tactile WCAG 2.5.5
+        minHeight: 48,
       }}
     >
       <View
@@ -83,10 +81,8 @@ export default function ProfileScreen() {
   const { colors, mode, setMode, isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { locale, setLocale, t } = useLanguage();
-  const { address, requestLocation } = useLocation();
   const { scheduleNotification, cancelAllNotifications, scheduleMealReminder } = useNotifications();
 
-  // Notifications state (persisté dans AsyncStorage)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
@@ -98,7 +94,6 @@ export default function ProfileScreen() {
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value) {
-      // Demander la permission
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
@@ -109,12 +104,9 @@ export default function ProfileScreen() {
       }
       setNotificationsEnabled(true);
       await AsyncStorage.setItem('notifications_enabled', 'true');
-
-      // Programmer les rappels quotidiens des 3 repas
-      await scheduleMealReminder('Petit-déjeuner', 7, 0);      // 07:00
-      await scheduleMealReminder('Déjeuner', 12, 30);          // 12:30
-      await scheduleMealReminder('Dîner', 19, 30);             // 19:30
-
+      await scheduleMealReminder('Petit-déjeuner', 7, 0);
+      await scheduleMealReminder('Déjeuner', 12, 30);
+      await scheduleMealReminder('Dîner', 19, 30);
       Alert.alert(
         'Notifications activées',
         'Tu recevras chaque jour :\n• 07h00 - Rappel petit-déjeuner\n• 12h30 - Rappel déjeuner\n• 19h30 - Rappel dîner'
@@ -144,7 +136,6 @@ export default function ProfileScreen() {
     setLocale(loc);
     setLangModalVisible(false);
     if (loc === 'ar') {
-      // L'arabe (RTL) nécessite un redémarrage complet pour appliquer la direction
       Alert.alert(
         'العربية',
         'يرجى إعادة تشغيل التطبيق لتطبيق اتجاه اليمين إلى اليسار بالكامل.',
@@ -167,6 +158,9 @@ export default function ProfileScreen() {
   const themeLabel =
     mode === 'light' ? t.profile.lightMode : mode === 'dark' ? t.profile.darkMode : t.profile.systemMode;
 
+  // L'utilisateur est-il administrateur ? (le rôle vient du backend à la connexion)
+  const isAdmin = (user as any)?.role === 'admin';
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: Spacing.lg }}>
@@ -174,7 +168,7 @@ export default function ProfileScreen() {
           {t.profile.title}
         </Text>
 
-        {/* User info - Cliquable vers écran Compte */}
+        {/* User info */}
         <TouchableOpacity
           onPress={() => router.push('/account')}
           activeOpacity={0.7}
@@ -220,7 +214,7 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
-        {/* Preferences (New) */}
+        {/* Preferences */}
         <TouchableOpacity
           onPress={() => router.push('/preferences')}
           activeOpacity={0.7}
@@ -251,7 +245,7 @@ export default function ProfileScreen() {
               Mes préférences
             </Text>
             <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-              Objectif, budget, régimes, portions
+              Objectif, régimes, portions
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -293,13 +287,6 @@ export default function ProfileScreen() {
               />
             }
           />
-          <SettingsRow
-            icon="location-outline"
-            iconColor="#E91E63"
-            label="Localisation"
-            value={address ?? 'Non définie'}
-            onPress={requestLocation}
-          />
         </View>
 
         {/* About & Logout */}
@@ -337,6 +324,36 @@ export default function ProfileScreen() {
             onPress={handleLogout}
           />
         </View>
+
+        {/* Espace Admin — visible UNIQUEMENT pour les administrateurs */}
+        {isAdmin && (
+          <>
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+            <TouchableOpacity
+              onPress={() => router.push('/admin')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir l'espace administrateur"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                paddingVertical: 14,
+                borderRadius: BorderRadius.md,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                marginTop: 12,
+              }}
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+              <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>
+                Espace Admin
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
 
       {/* Language Modal */}

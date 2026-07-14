@@ -20,6 +20,7 @@ model User {
   isOnboarded   Boolean  @default(false) @map("is_onboarded")
   referralCode  String   @unique @default(cuid()) @map("referral_code")
   invitedBy     String?  @map("invited_by")
+  role          String   @default("user")
   createdAt     DateTime @default(now()) @map("created_at")
 
   preferences       UserPreference?

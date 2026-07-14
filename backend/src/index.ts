@@ -22,6 +22,7 @@ import healthRoutes from './routes/health.routes';
 import recipesRoutes from './routes/recipes.routes';
 import preferencesRoutes from './routes/preferences.routes';
 import mealsRoutes from './routes/meals.routes';
+import adminRoutes from './routes/admin.routes';
 import shoppingRoutes from './routes/shopping.routes';
 
 const app = express();
@@ -128,6 +129,7 @@ app.use('/api/fridge', fridgeRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/health-goals', healthRoutes);
 app.use('/api/recipes', recipesRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/shopping', shoppingRoutes);

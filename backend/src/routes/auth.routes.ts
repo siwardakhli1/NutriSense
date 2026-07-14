@@ -81,7 +81,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
   logger.security('LOGIN_SUCCESS', { userId: user.id, email, ip });
 
   res.json({
-    user: { id: user.id, name: user.name, email: user.email, isOnboarded: user.isOnboarded, createdAt: user.createdAt.toISOString() },
+    user: { id: user.id, name: user.name, email: user.email, isOnboarded: user.isOnboarded, role: (user as any).role || 'user', createdAt: user.createdAt.toISOString() },
     accessToken,
     refreshToken,
   });
@@ -120,7 +120,7 @@ router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response) =
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, name: true, email: true, isOnboarded: true, createdAt: true },
+    select: { id: true, name: true, email: true, isOnboarded: true, role: true, createdAt: true },
   });
   if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
   res.json({ ...user, createdAt: user.createdAt.toISOString() });
@@ -131,7 +131,7 @@ router.post('/complete-onboarding', authMiddleware, async (req: AuthRequest, res
   const user = await prisma.user.update({
     where: { id: req.userId },
     data: { isOnboarded: true },
-    select: { id: true, name: true, email: true, isOnboarded: true, createdAt: true },
+    select: { id: true, name: true, email: true, isOnboarded: true, role: true, createdAt: true },
   });
   logger.security('ONBOARDING_COMPLETED', { userId: req.userId, ip: req.ip });
   res.json({ ...user, createdAt: user.createdAt.toISOString() });
