@@ -20,6 +20,7 @@ export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
@@ -35,7 +36,7 @@ export default function RegisterScreen() {
     }
 
     setError('');
-    const result = await register(name, email, password);
+    const result = await register(name, email, password, referralCode);
     if (result.success) {
       vibrate();
     } else {
@@ -99,6 +100,15 @@ export default function RegisterScreen() {
             secureTextEntry
             autoComplete="new-password"
             icon={<Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} />}
+          />
+
+          <InputField
+            label="Code de parrainage (optionnel)"
+            value={referralCode}
+            onChangeText={setReferralCode}
+            placeholder="Un ami t'a invité ? Entre son code"
+            autoCapitalize="none"
+            icon={<Ionicons name="gift-outline" size={20} color={colors.textMuted} />}
           />
 
           {error ? (

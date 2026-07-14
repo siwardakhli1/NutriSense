@@ -1,5 +1,5 @@
 // ==========================================
-// COMPONENTS - Meal Card + Day Selector + Budget + Stat
+// COMPONENTS - Meal Card + Composed Meal Card + Day Selector + Budget + Stat
 // ==========================================
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
@@ -29,6 +29,21 @@ function getMealType(label: string): string {
   return 'other';
 }
 
+// Renvoie "aujourd'hui" en YYYY-MM-DD, calé sur le fuseau France.
+function getTodayStrParis(): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  }
+}
+
 export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: MealCardProps) {
   const { colors } = useTheme();
   const [isEaten, setIsEaten] = useState(false);
@@ -36,22 +51,7 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
   const [logId, setLogId] = useState<string | null>(null);
 
   // Logique métier : on ne peut pas cocher un repas dans le FUTUR.
-  const todayStr = (() => {
-    // On cale "aujourd'hui" sur le fuseau de la France (Europe/Paris),
-    // pour que le changement de jour se fasse à minuit heure française,
-    // quel que soit le fuseau du téléphone/émulateur.
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Paris',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date()); // renvoie 'YYYY-MM-DD'
-    } catch {
-      const n = new Date();
-      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-    }
-  })();
+  const todayStr = getTodayStrParis();
   const isFuture = !!date && date > todayStr;
 
   // Vérifier si CE repas à CETTE date a été loggé
@@ -62,7 +62,7 @@ export function MealCard({ label, labelIcon, meal, onPress, date, onLogged }: Me
       if (res.success && res.data) {
         // On match sur date + label + mealType (les 3 doivent correspondre)
         const norm = (s: string) => (s || '').trim().toLowerCase();
-const alreadyLogged = res.data.logs.find(
+        const alreadyLogged = res.data.logs.find(
           (l: any) =>
             norm(l.label) === norm(meal.recipe.name) &&
             l.mealType === meal.type &&
@@ -262,6 +262,265 @@ const alreadyLogged = res.data.logs.find(
   );
 }
 
+// ========== COMPOSED MEAL CARD ==========
+// Affiche un repas COMPOSÉ (entrée / plat / dessert...) avec ses composantes.
+// Chaque composante a son propre check "j'ai mangé". Les composantes trop
+// simples (boisson, fruit) ne sont pas cliquables. Badge PREMIUM si applicable.
+interface ComposedMealCardProps {
+  label: string;
+  labelIcon?: string;
+  meal: any; // meal.components: [{ role, roleLabel, recipe }]
+  date?: string;
+  onPressComponent?: (recipeId?: string) => void;
+}
+
+export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponent }: ComposedMealCardProps) {
+  const { colors } = useTheme();
+
+  // Composantes du repas (fallback sur meal.recipe si pas de components)
+  const components: any[] =
+    meal?.components && meal.components.length > 0
+      ? meal.components
+      : meal?.recipe
+      ? [{ role: 'plat', roleLabel: 'Plat', recipe: meal.recipe }]
+      : [];
+
+  // Total calories + temps du repas
+  const totalCal = components.reduce((s, c) => s + (c.recipe?.nutrition?.calories || 0), 0);
+  const totalTime = components.reduce((s, c) => s + (c.recipe?.time || 0), 0);
+
+  // Suivi des composantes cochées
+  const [eatenIds, setEatenIds] = useState<Set<string>>(new Set());
+  const [logIds, setLogIds] = useState<Map<string, string>>(new Map());
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+
+  const todayStr = getTodayStrParis();
+  const isFuture = !!date && date > todayStr;
+
+  // Charger l'état "mangé" de chaque composante
+  useEffect(() => {
+    if (!date) return;
+    (async () => {
+      const res = await api.get<{ logs: any[] }>('/nutrition/logs?days=365');
+      if (res.success && res.data) {
+        const norm = (s: string) => (s || '').trim().toLowerCase();
+        const newEaten = new Set<string>();
+        const newLogIds = new Map<string, string>();
+        for (const c of components) {
+          const found = res.data.logs.find(
+            (l: any) =>
+              norm(l.label) === norm(c.recipe?.name) &&
+              l.mealType === meal.type &&
+              typeof l.loggedAt === 'string' &&
+              l.loggedAt.slice(0, 10) === date
+          );
+          if (found) {
+            newEaten.add(c.recipe.id);
+            newLogIds.set(c.recipe.id, found.id);
+          }
+        }
+        setEatenIds(newEaten);
+        setLogIds(newLogIds);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, meal?.type]);
+
+  const toggleComponent = async (recipe: any) => {
+    if (!date || isFuture) return;
+    const rid = recipe.id;
+    if (loadingIds.has(rid)) return; // ne bloque que CETTE composante
+
+    setLoadingIds((prev) => new Set(prev).add(rid));
+
+    const isEaten = eatenIds.has(rid);
+    if (isEaten) {
+      const lid = logIds.get(rid);
+      if (lid) {
+        const res = await api.delete(`/nutrition/log/${lid}`);
+        if (res.success) {
+          setEatenIds((prev) => {
+            const n = new Set(prev);
+            n.delete(rid);
+            return n;
+          });
+          setLogIds((prev) => {
+            const n = new Map(prev);
+            n.delete(rid);
+            return n;
+          });
+        }
+      }
+    } else {
+      const loggedAt = date + 'T12:00:00.000Z';
+      const res = await api.post<{ success: boolean; log: any }>('/nutrition/log', {
+        source: 'recipe',
+        label: recipe.name,
+        mealType: meal.type,
+        calories: recipe.nutrition?.calories || 0,
+        protein: recipe.nutrition?.protein || 0,
+        carbs: recipe.nutrition?.carbs || 0,
+        fat: recipe.nutrition?.fat || 0,
+        fiber: recipe.nutrition?.fiber || 0,
+        loggedAt,
+      });
+      if (res.success && (res.data as any)?.log) {
+        setEatenIds((prev) => new Set(prev).add(rid));
+        setLogIds((prev) => new Map(prev).set(rid, (res.data as any).log.id));
+      }
+    }
+
+    setLoadingIds((prev) => {
+      const n = new Set(prev);
+      n.delete(rid);
+      return n;
+    });
+  };
+
+  const eatenCount = components.filter((c) => eatenIds.has(c.recipe?.id)).length;
+  const allEaten = components.length > 0 && eatenCount === components.length;
+
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text
+        style={{
+          fontSize: FontSize.xs,
+          fontWeight: '700',
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 1.5,
+          marginBottom: 10,
+          paddingLeft: 4,
+        }}
+      >
+        {labelIcon} {label}
+      </Text>
+
+      <View
+        style={{
+          padding: 16,
+          borderRadius: BorderRadius.xl,
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: allEaten ? colors.primary : colors.border,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
+          elevation: 2,
+        }}
+      >
+        {/* En-tête : calories + temps totaux */}
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="flame-outline" size={13} color={colors.textMuted} />
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>{totalCal} kcal</Text>
+          </View>
+          {totalTime > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>{totalTime} min</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Composantes */}
+        {components.map((c, idx) => {
+          const recipe = c.recipe;
+          if (!recipe) return null;
+          const role = c.role || '';
+          const isEaten = eatenIds.has(recipe.id);
+          const isLoading = loadingIds.has(recipe.id);
+          // Boisson / fruit = trop simples → non cliquables (pas de détail recette)
+          const isClickable = role !== 'boisson' && role !== 'fruit';
+          const isPremium = ((recipe.tags as string[]) || []).includes('premium');
+
+          return (
+            <View
+              key={recipe.id || idx}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                paddingVertical: 8,
+              }}
+            >
+              {/* Checkbox "j'ai mangé" */}
+              <TouchableOpacity
+                onPress={() => toggleComponent(recipe)}
+                disabled={isLoading || isFuture}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: isEaten, disabled: isFuture }}
+                accessibilityLabel={`${isEaten ? 'Annuler' : 'Marquer mangé'} : ${recipe.name}`}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: isFuture ? colors.border : colors.primary,
+                  backgroundColor: isEaten ? colors.primary : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: isFuture ? 0.5 : 1,
+                }}
+              >
+                {isEaten && <Ionicons name="checkmark" size={16} color="#fff" />}
+              </TouchableOpacity>
+
+              {/* Image de la composante */}
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  backgroundColor: colors.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <RecipeImage name={recipe.name} fallbackEmoji={recipe.emoji} style={{ fontSize: 20 }} />
+              </View>
+
+              {/* Nom + rôle (cliquable si ce n'est pas une boisson/fruit) */}
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                activeOpacity={isClickable ? 0.6 : 1}
+                onPress={() => isClickable && onPressComponent?.(recipe.id)}
+                disabled={!isClickable}
+              >
+                <Text style={{ fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {c.roleLabel || role}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: colors.text,
+                      textDecorationLine: isEaten ? 'line-through' : 'none',
+                    }}
+                  >
+                    {recipe.name}
+                  </Text>
+                  {isPremium && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: colors.primary, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
+                      <Ionicons name="star" size={8} color="#fff" />
+                      <Text style={{ fontSize: 8, color: '#fff', fontWeight: '700' }}>PREMIUM</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                  {recipe.nutrition?.calories || 0} kcal
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 // ========== DAY SELECTOR ==========
 interface DaySelectorProps {
   days: string[];
@@ -271,6 +530,7 @@ interface DaySelectorProps {
   monthLabel?: string;
   daysWithPlan?: boolean[];
   todayIndex?: number;
+  onMonthPress?: () => void;
 }
 
 export function DaySelector({
@@ -281,24 +541,32 @@ export function DaySelector({
   monthLabel,
   daysWithPlan = [],
   todayIndex = -1,
+  onMonthPress,
 }: DaySelectorProps) {
   const { colors } = useTheme();
 
   return (
     <View>
       {monthLabel && (
-        <Text
-          style={{
-            textAlign: 'center',
-            fontSize: 13,
-            fontWeight: '700',
-            color: colors.textSecondary,
-            marginBottom: 8,
-            textTransform: 'capitalize',
-          }}
+        <TouchableOpacity
+          onPress={onMonthPress}
+          disabled={!onMonthPress}
+          activeOpacity={onMonthPress ? 0.6 : 1}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 8 }}
         >
-          {monthLabel}
-        </Text>
+          <Text
+            style={{
+              textAlign: 'center',
+              fontSize: 13,
+              fontWeight: '700',
+              color: colors.textSecondary,
+              textTransform: 'capitalize',
+            }}
+          >
+            {monthLabel}
+          </Text>
+          {onMonthPress && <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />}
+        </TouchableOpacity>
       )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4 }}>
         {days.map((day, i) => {
@@ -306,6 +574,8 @@ export function DaySelector({
           const isToday = i === todayIndex;
           const hasPlan = daysWithPlan[i];
           const dayNum = dayNumbers[i];
+          // Jour passé : avant aujourd'hui (todayIndex). Grisé mais toujours consultable.
+          const isPast = todayIndex >= 0 && i < todayIndex;
 
           return (
             <TouchableOpacity
@@ -321,6 +591,7 @@ export function DaySelector({
                 borderColor: isSelected ? colors.primary : isToday ? colors.primary : colors.border,
                 alignItems: 'center',
                 minWidth: 56,
+                opacity: isPast && !isSelected ? 0.45 : 1,
               }}
             >
               <Text
@@ -338,7 +609,7 @@ export function DaySelector({
                 style={{
                   fontSize: 15,
                   fontWeight: '800',
-                  color: isSelected ? '#fff' : colors.text,
+                  color: isSelected ? '#fff' : isPast ? colors.textMuted : colors.text,
                 }}
               >
                 {dayNum || day}
@@ -453,305 +724,6 @@ export function StatCard({ label, value, unit, icon, color }: StatCardProps) {
       <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
         {label}
       </Text>
-    </View>
-  );
-}
-
-// ==========================================
-// COMPOSED MEAL CARD — repas complet, design pro
-// Flèche seule + icônes silhouettes + check INDIVIDUEL par plat.
-// Chaque composante est loggée séparément → calcul de calories juste.
-// ==========================================
-interface ComposedMealCardProps {
-  label: string;
-  labelIcon?: string;      // (conservé pour compat, non utilisé : on met une icône Ionicons)
-  meal: Meal;
-  date?: string;
-  defaultOpen?: boolean;
-  onPressComponent?: (recipeId: string) => void;
-  onLogged?: () => void;
-}
-
-// Icône silhouette (Ionicons outline) selon le type de repas
-function mealIconName(type: string): any {
-  if (type === 'breakfast') return 'cafe-outline';
-  if (type === 'lunch') return 'sunny-outline';
-  if (type === 'dinner') return 'moon-outline';
-  return 'restaurant-outline';
-}
-
-// Couleur de la barre latérale : nuances de vert selon le repas
-function mealBarColor(type: string, colors: any): string {
-  if (type === 'breakfast') return colors.primaryLight;  // vert clair
-  if (type === 'lunch') return colors.primary;           // vert moyen
-  if (type === 'dinner') return colors.primaryDark;      // vert foncé
-  return colors.primary;
-}
-
-export function ComposedMealCard({
-  label,
-  meal,
-  date,
-  defaultOpen = false,
-  onPressComponent,
-  onLogged,
-}: ComposedMealCardProps) {
-  const { colors } = useTheme();
-  const [open, setOpen] = useState(defaultOpen);
-  // Map recipeId -> logId pour les composantes cochées
-  const [eatenMap, setEatenMap] = useState<Record<string, string>>({});
-  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
-
-  const components = meal.components || [];
-
-  // Fuseau France pour bloquer le futur
-  const todayStr = (() => {
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Paris',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-      }).format(new Date());
-    } catch {
-      const n = new Date();
-      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-    }
-  })();
-  const isFuture = !!date && date > todayStr;
-
-  // Calories totales du repas et calories mangées (composantes cochées)
-  const totalCalories = components.reduce((s, c) => s + (c.recipe.nutrition?.calories || 0), 0);
-  const eatenCalories = components.reduce(
-    (s, c) => s + (eatenMap[c.recipe.id] ? (c.recipe.nutrition?.calories || 0) : 0),
-    0
-  );
-  const totalTime = components.reduce((s, c) => s + (c.recipe.time || 0), 0);
-  const allEaten = components.length > 0 && components.every((c) => eatenMap[c.recipe.id]);
-
-  // Au chargement : retrouver quelles composantes sont déjà loggées
-  useEffect(() => {
-    if (!date || components.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      const res = await api.get<{ logs: any[] }>('/nutrition/logs?days=365');
-      if (cancelled || !res.success || !res.data) return;
-      const norm = (s: string) => (s || '').trim().toLowerCase();
-      const map: Record<string, string> = {};
-      for (const comp of components) {
-        const found = res.data.logs.find(
-          (l: any) =>
-            norm(l.label) === norm(comp.recipe.name) &&
-            l.mealType === meal.type &&
-            typeof l.loggedAt === 'string' &&
-            l.loggedAt.slice(0, 10) === date
-        );
-        if (found) map[comp.recipe.id] = found.id;
-      }
-      if (!cancelled) setEatenMap(map);
-    })();
-    return () => { cancelled = true; };
-  }, [meal.type, date, components.length]);
-
-  // Cocher / décocher UNE composante
-  const toggleComponent = async (comp: any) => {
-    if (!date || isFuture || loadingIds.has(comp.recipe.id)) return;
-    setLoadingIds((s) => new Set(s).add(comp.recipe.id));
-    const existingLogId = eatenMap[comp.recipe.id];
-
-    if (existingLogId) {
-      // Décocher : supprimer le log
-      const res = await api.delete(`/nutrition/log/${existingLogId}`);
-      if (res.success) {
-        setEatenMap((m) => {
-          const copy = { ...m };
-          delete copy[comp.recipe.id];
-          return copy;
-        });
-        onLogged?.();
-      }
-    } else {
-      // Cocher : créer le log de cette composante
-      const loggedAt = date + 'T12:00:00.000Z';
-      const n = comp.recipe.nutrition || {};
-      const res = await api.post<{ success: boolean; log: any }>('/nutrition/log', {
-        source: 'recipe',
-        label: comp.recipe.name,
-        mealType: meal.type,
-        calories: n.calories || 0,
-        protein: n.protein || 0,
-        carbs: n.carbs || 0,
-        fat: n.fat || 0,
-        fiber: n.fiber || 0,
-        loggedAt,
-      });
-      if (res.success && (res.data as any)?.log) {
-        setEatenMap((m) => ({ ...m, [comp.recipe.id]: (res.data as any).log.id }));
-        onLogged?.();
-      } else {
-        Alert.alert('Erreur', "Impossible d'enregistrer ce plat");
-      }
-    }
-    setLoadingIds((s) => {
-      const copy = new Set(s);
-      copy.delete(comp.recipe.id);
-      return copy;
-    });
-  };
-
-  // Rétrocompat : ancien format sans composantes → MealCard classique
-  if (components.length === 0) {
-    return (
-      <MealCard
-        label={label}
-        meal={meal}
-        date={date}
-        onLogged={onLogged}
-        onPress={() => onPressComponent?.(meal.recipe?.id)}
-      />
-    );
-  }
-
-  // Sous-titre de l'en-tête : calories mangées si on a commencé, sinon total
-  const headerSub =
-    eatenCalories > 0
-      ? `${eatenCalories} / ${totalCalories} kcal mangés`
-      : `${totalCalories} kcal · ${totalTime} min`;
-
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderRadius: 12,
-          borderWidth: allEaten ? 2 : 1,
-          borderColor: allEaten ? colors.primary : colors.border,
-          overflow: 'hidden',
-          flexDirection: 'row',
-        }}
-      >
-        {/* Barre de couleur latérale (nuance de vert selon le repas) */}
-        <View style={{ width: 4, backgroundColor: mealBarColor(meal.type, colors) }} />
-
-        {/* Contenu de la carte */}
-        <View style={{ flex: 1 }}>
-        {/* En-tête : icône silhouette + nom + flèche seule */}
-        <TouchableOpacity
-          onPress={() => setOpen((o) => !o)}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`${label}, ${open ? 'replier' : 'déplier'}`}
-          style={{
-            padding: 14,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <Ionicons name={mealIconName(meal.type)} size={22} color={colors.textSecondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{label}</Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{headerSub}</Text>
-          </View>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-
-        {/* Composantes avec case à cocher individuelle */}
-        {open && (
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
-            {components.map((comp, idx) => {
-              const isEaten = !!eatenMap[comp.recipe.id];
-              // Boisson et fruit sont trop simples pour avoir une fiche recette
-              const isClickable = comp.role !== 'boisson' && comp.role !== 'fruit';
-              return (
-                <View
-                  key={`${comp.role}-${idx}`}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingVertical: 11,
-                    paddingHorizontal: 14,
-                    borderBottomWidth: idx < components.length - 1 ? 1 : 0,
-                    borderBottomColor: colors.border,
-                  }}
-                >
-                  {/* Case à cocher */}
-                  <TouchableOpacity
-                    onPress={() => toggleComponent(comp)}
-                    disabled={isFuture || loadingIds.has(comp.recipe.id)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: isEaten }}
-                    accessibilityLabel={`${comp.roleLabel} ${comp.recipe.name}, ${isEaten ? 'mangé' : 'à cocher'}`}
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 7,
-                      backgroundColor: isEaten ? colors.primary : 'transparent',
-                      borderWidth: isEaten ? 0 : 2,
-                      borderColor: isFuture ? colors.border : colors.textMuted,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: isFuture ? 0.4 : 1,
-                    }}
-                  >
-                    {isEaten && <Ionicons name="checkmark" size={16} color="#fff" />}
-                    {isFuture && !isEaten && <Ionicons name="time-outline" size={14} color={colors.textMuted} />}
-                  </TouchableOpacity>
-
-                  {/* Photo du plat (cliquable seulement pour les vraies recettes) */}
-                  <TouchableOpacity
-                    onPress={() => isClickable && onPressComponent?.(comp.recipe.id)}
-                    activeOpacity={isClickable ? 0.7 : 1}
-                    disabled={!isClickable}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      backgroundColor: colors.primaryLight,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <RecipeImage
-                      name={comp.recipe.name}
-                      fallbackEmoji={comp.recipe.emoji}
-                      style={{ fontSize: 24 }}
-                    />
-                  </TouchableOpacity>
-
-                  {/* Nom + rôle (cliquable seulement pour les vraies recettes) */}
-                  <TouchableOpacity
-                    onPress={() => isClickable && onPressComponent?.(comp.recipe.id)}
-                    activeOpacity={isClickable ? 0.7 : 1}
-                    disabled={!isClickable}
-                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-                  >
-                    <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 10, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      {comp.roleLabel}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: colors.text,
-                        marginTop: 1,
-                        textDecorationLine: isEaten ? 'line-through' : 'none',
-                      }}
-                    >
-                      {comp.recipe.name}
-                    </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
-                    {comp.recipe.nutrition?.calories || 0} kcal
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-        </View>
-      </View>
     </View>
   );
 }

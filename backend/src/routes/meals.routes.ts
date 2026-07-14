@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { prisma } from '../config/database';
 import { authMiddleware, AuthRequest } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-import { generateWeekPlan, generateShoppingList, regeneratePlanFromToday } from '../services/mealPlan.service';
+import { generateWeekPlan, generateShoppingList, regeneratePlanFromToday, rescalePlanServings } from '../services/mealPlan.service';
 
 const router = Router();
 
@@ -175,6 +175,58 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response) =
       tags: r.tags,
     })),
   });
+});
+
+/**
+ * GET /api/meals/all-recipes
+ * Renvoie TOUTES les recettes de la base (pour l'écran Recettes).
+ */
+router.get('/all-recipes', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const all = await prisma.recipe.findMany();
+  return res.json({
+    recipes: all.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      emoji: r.emoji,
+      time: r.timeMinutes,
+      servings: r.servings,
+      difficulty: r.difficulty,
+      ingredients: r.ingredients,
+      steps: r.steps,
+      nutrition: r.nutrition,
+      tags: r.tags,
+    })),
+  });
+});
+
+/**
+ * POST /api/meals/rescale
+ * Ré-échelonne le plan existant au nouveau nombre de personnes,
+ * SANS changer les recettes (juste les quantités + prix + courses).
+ */
+router.post('/rescale', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { servings } = req.body;
+  const target = Number(servings) || 1;
+
+  const weekPlan = await rescalePlanServings(req.userId!, target);
+  if (!weekPlan) {
+    return res.status(404).json({ success: false, message: 'Aucun plan à ré-échelonner' });
+  }
+
+  // Régénérer la liste de courses avec les nouvelles quantités
+  const shoppingList = await generateShoppingList(req.userId!, weekPlan);
+
+  // Renvoyer aussi les recettes du plan (comme /current)
+  const recipeIds = new Set<string>();
+  (weekPlan.days as any[]).forEach((d: any) =>
+    d.meals?.forEach((m: any) => {
+      if (m.recipe?.id) recipeIds.add(m.recipe.id);
+      (m.components || []).forEach((c: any) => c.recipe?.id && recipeIds.add(c.recipe.id));
+    })
+  );
+  const recipes = await prisma.recipe.findMany({ where: { id: { in: [...recipeIds] } } });
+
+  return res.json({ success: true, weekPlan, shoppingList, recipes });
 });
 
 export default router;

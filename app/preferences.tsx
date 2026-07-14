@@ -1,4 +1,4 @@
-// SCREEN - Mes préférences (modifier objectif, budget, régimes, portions)
+// SCREEN - Mes préférences (modifier objectif, régimes, portions)
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Alert,
@@ -52,6 +52,9 @@ export default function PreferencesScreen() {
   const [dietary, setDietary] = useState<string[]>([]);
   const [servings, setServings] = useState(2);
 
+  // Valeurs initiales (pour détecter ce qui a réellement changé)
+  const initialRef = React.useRef({ goal: 'healthy', budget: 60, dietary: [] as string[], servings: 2 });
+
   useEffect(() => {
     (async () => {
       const res = await api.get<Preferences>('/preferences');
@@ -60,6 +63,12 @@ export default function PreferencesScreen() {
         setBudget(res.data.budget || 60);
         setDietary(res.data.dietary || []);
         setServings(res.data.servings || 2);
+        initialRef.current = {
+          goal: res.data.goal || 'healthy',
+          budget: res.data.budget || 60,
+          dietary: res.data.dietary || [],
+          servings: res.data.servings || 2,
+        };
       }
       setLoading(false);
     })();
@@ -95,16 +104,37 @@ export default function PreferencesScreen() {
     const ok = await save();
     if (!ok) return;
 
+    // Détecter si SEUL le nombre de personnes a changé.
+    const init = initialRef.current;
+    const dietarySame =
+      init.dietary.length === dietary.length &&
+      init.dietary.every((d) => dietary.includes(d));
+    const onlyServingsChanged =
+      init.goal === goal &&
+      init.budget === budget &&
+      dietarySame &&
+      init.servings !== servings;
+
     setRegenerating(true);
-    const res = await api.post('/meals/regenerate-from-today', { goal, budget, dietary, servings });
+
+    // Si seul le nombre de personnes change → ré-échelonner SANS changer les recettes.
+    // Sinon (régime/objectif changé) → régénérer de nouvelles recettes.
+    const endpoint = onlyServingsChanged ? '/meals/rescale' : '/meals/regenerate-from-today';
+    const res = await api.post(endpoint, onlyServingsChanged ? { servings } : { goal, budget, dietary, servings });
 
     if (res.success) {
-      // Forcer le rechargement du contexte pour que le tab Plan voit le nouveau plan
+      // Mettre à jour la référence pour les prochains changements
+      initialRef.current = { goal, budget, dietary: [...dietary], servings };
+      // Forcer le rechargement du contexte pour que le tab Plan voie le nouveau plan
       await refreshPlan();
       setRegenerating(false);
-      Alert.alert('✅ Plan mis à jour', 'Les jours passés sont conservés, le reste de la semaine a été régénéré !', [
-        { text: 'Voir mon plan', onPress: () => router.replace('/(tabs)') },
-      ]);
+      Alert.alert(
+        '✅ Plan mis à jour',
+        onlyServingsChanged
+          ? 'Les quantités et le budget ont été adaptés au nombre de personnes.'
+          : 'Les jours passés sont conservés, le reste de la semaine a été régénéré !',
+        [{ text: 'Voir mon plan', onPress: () => router.replace('/(tabs)') }]
+      );
     } else {
       setRegenerating(false);
       Alert.alert('Erreur', res.message || 'Impossible de régénérer le plan');

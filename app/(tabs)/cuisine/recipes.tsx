@@ -34,9 +34,17 @@ export default function RecipesScreen() {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            {item.name}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+              {item.name}
+            </Text>
+            {((item.tags as string[]) || []).includes('premium') && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.primary, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 }}>
+                <Ionicons name="star" size={10} color="#fff" />
+                <Text style={{ fontSize: 9, color: '#fff', fontWeight: '700' }}>PREMIUM</Text>
+              </View>
+            )}
+          </View>
           <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="time-outline" size={12} color={colors.textMuted} />

@@ -27,7 +27,7 @@ export default function OnboardingPreferences() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useLanguage();
-  const { preferences, updateDietary, generatePlan } = useMealPlan();
+  const { preferences, updateDietary, generatePlan, weekPlan } = useMealPlan();
   const { completeOnboarding } = useAuth();
   const { vibrate, vibrateSuccess } = useVibration();
   const { scheduleNotification } = useNotifications();
@@ -55,12 +55,16 @@ export default function OnboardingPreferences() {
     }
 
     try {
-      await Promise.race([
-        generatePlan(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 15000)
-        ),
-      ]);
+      // Ne générer un plan que s'il n'en existe pas déjà un.
+      // (Évite d'écraser le plan existant si l'utilisateur revient sur l'onboarding.)
+      if (!weekPlan) {
+        await Promise.race([
+          generatePlan(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 15000)
+          ),
+        ]);
+      }
     } catch (e) {
       console.warn('generatePlan timeout or error, continuing...', e);
     }

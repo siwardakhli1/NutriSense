@@ -565,6 +565,64 @@ export async function seedRecipes(): Promise<void> {
       tags: ['vegan', 'vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'keto', 'healthy', 'budget', 'fast', 'breakfast', 'fruit'] },
 
 
+    // ==========================================================
+    // ⭐ RECETTES PREMIUM (débloquées au palier 3 amis parrainés)
+    // Gastronomiques, tag 'premium' → cachées tant que invitedCount < 3
+    // ==========================================================
+    { id: 'pr01', name: 'Risotto aux truffes', emoji: null, timeMinutes: 40, servings: 2, difficulty: 'difficile',
+      ingredients: [
+        { id: 'pr01_1', name: 'Riz arborio', quantity: '200', unit: 'g', category: 'feculents' },
+        { id: 'pr01_2', name: 'Truffe', quantity: '10', unit: 'g', category: 'epicerie' },
+        { id: 'pr01_3', name: 'Parmesan', quantity: '60', unit: 'g', category: 'produits_laitiers' },
+        { id: 'pr01_4', name: 'Beurre', quantity: '30', unit: 'g', category: 'produits_laitiers' }],
+      steps: ['Faire revenir l\'échalote dans le beurre.', 'Nacrer le riz.', 'Ajouter le bouillon louche par louche.', 'Incorporer le parmesan hors du feu.', 'Râper la truffe par-dessus.', 'Servir immédiatement.'],
+      nutrition: { calories: 520, protein: 16, carbs: 72, fat: 18, fiber: 3 },
+      tags: ['vegetarian', 'halal', 'sans_gluten', 'premium', 'lunch', 'dinner', 'plat'] },
+
+    { id: 'pr02', name: 'Saumon en croûte d\'herbes', emoji: null, timeMinutes: 35, servings: 2, difficulty: 'difficile',
+      ingredients: [
+        { id: 'pr02_1', name: 'Pavé de saumon', quantity: '300', unit: 'g', category: 'proteines' },
+        { id: 'pr02_2', name: 'Persil', quantity: '1', unit: 'bouquet', category: 'fruits_legumes' },
+        { id: 'pr02_3', name: 'Chapelure', quantity: '50', unit: 'g', category: 'feculents' }],
+      steps: ['Mixer les herbes avec la chapelure.', 'Enrober le saumon.', 'Cuire au four 15 min à 200°C.', 'Servir avec légumes de saison.'],
+      nutrition: { calories: 480, protein: 38, carbs: 18, fat: 28, fiber: 2 },
+      tags: ['halal', 'premium', 'healthy', 'muscle', 'lunch', 'dinner', 'plat'] },
+
+
+
+    { id: 'pr05', name: 'Magret de canard au miel', emoji: null, timeMinutes: 30, servings: 2, difficulty: 'difficile',
+      ingredients: [
+        { id: 'pr05_1', name: 'Magret de canard', quantity: '350', unit: 'g', category: 'proteines' },
+        { id: 'pr05_2', name: 'Miel', quantity: '2', unit: 'c.à.s', category: 'epicerie' }],
+      steps: ['Quadriller la peau du magret.', 'Cuire côté peau 6 min.', 'Retourner 4 min.', 'Glacer au miel.', 'Trancher et servir.'],
+      nutrition: { calories: 560, protein: 40, carbs: 12, fat: 40, fiber: 0 },
+      tags: ['halal', 'sans_gluten', 'premium', 'muscle', 'lunch', 'dinner', 'plat'] },
+
+
+    { id: 'pr07', name: 'Tartare de saumon à l\'avocat', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'moyen',
+      ingredients: [
+        { id: 'pr07_1', name: 'Pavé de saumon', quantity: '250', unit: 'g', category: 'proteines' },
+        { id: 'pr07_2', name: 'Avocat', quantity: '1', unit: 'pièce', category: 'fruits_legumes' },
+        { id: 'pr07_3', name: 'Citron', quantity: '1', unit: 'pièce', category: 'fruits_legumes' }],
+      steps: ['Couper le saumon en dés.', 'Ajouter l\'avocat en cubes.', 'Assaisonner citron, huile.', 'Dresser à l\'emporte-pièce.', 'Servir frais.'],
+      nutrition: { calories: 380, protein: 26, carbs: 8, fat: 28, fiber: 5 },
+      tags: ['halal', 'sans_gluten', 'sans_lactose', 'keto', 'premium', 'healthy', 'lunch', 'dinner', 'entree'] },
+
+
+    { id: 'pr09', name: 'Fondant au chocolat cœur coulant', emoji: null, timeMinutes: 25, servings: 4, difficulty: 'moyen',
+      ingredients: [
+        { id: 'pr09_1', name: 'Chocolat noir', quantity: '200', unit: 'g', category: 'epicerie' },
+        { id: 'pr09_2', name: 'Beurre', quantity: '100', unit: 'g', category: 'produits_laitiers' },
+        { id: 'pr09_3', name: 'Œufs', quantity: '4', unit: 'pièces', category: 'proteines' },
+        { id: 'pr09_4', name: 'Sucre', quantity: '80', unit: 'g', category: 'epicerie' }],
+      steps: ['Fondre chocolat et beurre.', 'Battre œufs et sucre.', 'Mélanger le tout.', 'Verser dans des ramequins.', 'Cuire 10 min à 200°C.', 'Servir tiède, cœur coulant.'],
+      nutrition: { calories: 420, protein: 8, carbs: 38, fat: 28, fiber: 3 },
+      tags: ['vegetarian', 'halal', 'premium', 'lunch', 'dinner', 'dessert'] },
+
+
+
+
+
   ];
 
   await prisma.recipe.createMany({ data: recipes });

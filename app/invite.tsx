@@ -2,7 +2,7 @@
 // SCREEN - Inviter un ami (parrainage)
 // ==========================================
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Share, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,8 +23,6 @@ export default function InviteScreen() {
 
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [inputCode, setInputCode] = useState('');
-  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -55,31 +53,6 @@ Ou clique directement : ${data.inviteLink}
       });
     } catch (e) {
       console.log('Share cancelled');
-    }
-  };
-
-  const handleRedeem = async () => {
-    if (!inputCode.trim()) {
-      Alert.alert('Erreur', 'Entre un code');
-      return;
-    }
-    setRedeeming(true);
-    try {
-      const res = await api.post<{ success: boolean; inviterName: string; message: string }>(
-        '/auth/redeem-invite',
-        { code: inputCode.trim() }
-      );
-      if (res.success && res.data) {
-        Alert.alert('🎉 Bienvenue !', res.data.message, [
-          { text: 'OK', onPress: () => setInputCode('') },
-        ]);
-      } else {
-        Alert.alert('Erreur', res.message || 'Code invalide');
-      }
-    } catch (e) {
-      Alert.alert('Erreur', 'Une erreur est survenue');
-    } finally {
-      setRedeeming(false);
     }
   };
 
@@ -182,79 +155,90 @@ Ou clique directement : ${data.inviteLink}
           </Text>
         </TouchableOpacity>
 
-        {/* Section : Utiliser un code reçu */}
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-          Tu as reçu un code ?
-        </Text>
-        <View
-          style={{
-            padding: Spacing.md,
-            borderRadius: BorderRadius.lg,
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: Spacing.lg,
-          }}
-        >
-          <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12, lineHeight: 18 }}>
-            Un ami t'a partagé son code ? Entre-le ici pour le remercier :
-          </Text>
-          <TextInput
-            value={inputCode}
-            onChangeText={setInputCode}
-            placeholder="Entre le code..."
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="none"
-            style={{
-              backgroundColor: colors.background,
-              padding: 12,
-              borderRadius: BorderRadius.md,
-              fontSize: 14,
-              color: colors.text,
-              borderWidth: 1,
-              borderColor: colors.border,
-              marginBottom: 10,
-            }}
-          />
-          <TouchableOpacity
-            onPress={handleRedeem}
-            disabled={redeeming || !inputCode.trim()}
-            style={{
-              padding: 12,
-              borderRadius: BorderRadius.md,
-              backgroundColor: inputCode.trim() ? colors.primary : colors.border,
-              alignItems: 'center',
-            }}
-          >
-            {redeeming ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={{ color: '#fff', fontWeight: '800' }}>Valider le code</Text>
-            )}
-          </TouchableOpacity>
-        </View>
 
-        {/* Explication */}
-        <View
-          style={{
-            padding: Spacing.md,
-            borderRadius: BorderRadius.lg,
-            backgroundColor: colors.primaryLight,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Ionicons name="information-circle" size={18} color={colors.primary} />
-            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>
-              Comment ça marche ?
-            </Text>
-          </View>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 18 }}>
-            1. Partage ton code à un ami{'\n'}
-            2. Il s'inscrit sur NutriSense{'\n'}
-            3. Il entre ton code dans "Inviter un ami"{'\n'}
-            4. Vous êtes tous les deux dans la communauté 🎉
-          </Text>
-        </View>
+        {/* ===== MES RÉCOMPENSES ===== */}
+        {(() => {
+          const THRESHOLD = 5;
+          const count = data?.invitedCount ?? 0;
+          const unlocked = count >= THRESHOLD;
+          const pct = Math.min(100, (count / THRESHOLD) * 100);
+          const remaining = Math.max(0, THRESHOLD - count);
+          return (
+            <>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Mes récompenses
+              </Text>
+
+              {/* Carte progression */}
+              <View
+                style={{
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.lg,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: 14,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>Ta progression</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>
+                    {count} / {THRESHOLD} amis
+                  </Text>
+                </View>
+                <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.border, overflow: 'hidden' }}>
+                  <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.primary, width: `${pct}%` }} />
+                </View>
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 8 }}>
+                  {unlocked
+                    ? 'Récompense débloquée ! 🎉'
+                    : `Plus que ${remaining} ami${remaining > 1 ? 's' : ''} pour débloquer 5 recettes premium 🍽️`}
+                </Text>
+              </View>
+
+              {/* Carte palier 5 amis */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.lg,
+                  backgroundColor: colors.primaryLight,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                  marginBottom: Spacing.lg,
+                }}
+              >
+                <View
+                  style={{
+                    width: 48, height: 48, borderRadius: 12,
+                    backgroundColor: colors.surface,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="restaurant" size={26} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+                      {THRESHOLD} amis
+                    </Text>
+                    <View style={{ backgroundColor: unlocked ? colors.primary : colors.border, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 9, fontWeight: '800', color: unlocked ? '#fff' : colors.textSecondary }}>
+                        {unlocked ? 'DÉBLOQUÉ' : 'ACTIF'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                    Débloque 5 recettes premium exclusives
+                  </Text>
+                </View>
+              </View>
+            </>
+          );
+        })()}
+
       </ScrollView>
     </SafeAreaView>
   );

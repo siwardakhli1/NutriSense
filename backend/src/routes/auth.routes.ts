@@ -16,7 +16,7 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 router.post('/register', authLimiter, validate(registerSchema), async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, referralCode } = req.body;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -26,9 +26,21 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
   const id = generateId();
   const hashedPassword = await bcrypt.hash(password, 12);
 
+  // Si un code de parrainage est fourni, trouver l'inviteur pour lier le compte.
+  let invitedBy: string | undefined;
+  if (referralCode && referralCode.trim()) {
+    const inviter = await prisma.user.findUnique({
+      where: { referralCode: referralCode.trim() },
+      select: { id: true },
+    });
+    if (inviter) invitedBy = inviter.id;
+    // Code invalide → on ignore simplement (l'inscription continue sans parrain).
+  }
+
   await prisma.user.create({
     data: {
       id, name, email, password: hashedPassword,
+      ...(invitedBy ? { invitedBy } : {}),
       preferences: { create: {} }, 
     },
   });

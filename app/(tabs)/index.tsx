@@ -11,6 +11,7 @@ import { useAccelerometer } from '@/hooks/useNativeAPIs';
 import { useShare } from '@/hooks/useShare';
 import { MealCard, ComposedMealCard, DaySelector, BudgetCard, StatCard } from '@/components/MealComponents';
 import { api } from '@/services/api';
+import { MonthCalendar } from '@/components/MonthCalendar';
 import { LoadingSpinner, ErrorDisplay } from '@/components/ui';
 import { Spacing, FontSize } from '@/constants/Colors';
 
@@ -37,6 +38,7 @@ export default function PlanScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAllIngredients, setShowAllIngredients] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [monthCalendarOpen, setMonthCalendarOpen] = useState(false);
   // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
   // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
   // ses clics ne sont JAMAIS écrasés.
@@ -56,11 +58,12 @@ export default function PlanScreen() {
     return () => cleanup?.();
   }, []);
 
-  useEffect(() => {
-    if (isShaking && !isLoading) {
-      refreshPlan();
-    }
-  }, [isShaking]);
+  // (Shake-to-refresh désactivé : évitons tout rechargement involontaire du plan)
+  // useEffect(() => {
+  //   if (isShaking && !isLoading) {
+  //     refreshPlan();
+  //   }
+  // }, [isShaking]);
 
   // Marquer la fin du chargement initial
   useEffect(() => {
@@ -74,16 +77,8 @@ export default function PlanScreen() {
     }
   }, [initialLoadDone, weekPlan, isLoading]);
 
-  // Auto-régénération SEULEMENT si la semaine est réellement terminée (par jour local)
-  useEffect(() => {
-    if (!weekPlan?.endDate || isLoading || !initialLoadDone) return;
-    const todayStr = getTodayStr();
-    const endStr = String(weekPlan.endDate).slice(0, 10);
-    if (endStr < todayStr) {
-      console.log('[Plan] Semaine expirée, régénération auto...');
-      generatePlan();
-    }
-  }, [weekPlan?.endDate, initialLoadDone]);
+  // (Auto-régénération d'expiration RETIRÉE : elle pouvait régénérer le plan
+  //  involontairement. L'utilisateur régénère manuellement via le bouton 🔄 si besoin.)
 
   // (Retiré : le refresh auto à chaque focus rechargeait le plan inutilement)
 
@@ -208,6 +203,7 @@ export default function PlanScreen() {
               const d = new Date(weekPlan.days[0].date);
               return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
             })()}
+            onMonthPress={() => setMonthCalendarOpen(true)}
             daysWithPlan={weekPlan?.days?.map((d) => (d.meals?.length ?? 0) >= 3) ?? []}
             todayIndex={(() => {
               if (!weekPlan?.days) return -1;
@@ -315,6 +311,22 @@ export default function PlanScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Calendrier mensuel (s'ouvre au clic sur le mois) */}
+      <MonthCalendar
+        visible={monthCalendarOpen}
+        onClose={() => setMonthCalendarOpen(false)}
+        planDates={weekPlan?.days?.map((d) => d.date) ?? []}
+        todayStr={(() => {
+          const realToday = getTodayStr();
+          const dates = weekPlan?.days?.map((d) => d.date) ?? [];
+          // Si aujourd'hui est dans le plan, on l'utilise. Sinon, le plan démarre
+          // aujourd'hui par design → on prend son premier jour comme référence.
+          if (dates.includes(realToday)) return realToday;
+          return dates[0] ?? realToday;
+        })()}
+        onSelectPlanDay={(idx) => setSelectedDay(idx)}
+      />
     </SafeAreaView>
   );
 }

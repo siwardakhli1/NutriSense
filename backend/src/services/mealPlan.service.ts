@@ -115,11 +115,30 @@ export function splitByMealType(recipes: Recipe[]): Record<MealType, Recipe[]> {
  * le tag de ce rôle. Garde la rétrocompatibilité en exposant aussi `recipe`
  * (= la composante principale : plat, ou pdej_principal, ou la 1ère dispo).
  */
+/**
+ * Adapte les quantités d'ingrédients d'une recette au nombre de personnes voulu.
+ * facteur = targetServings / (servings de la recette).
+ * Ex : recette pour 1 pers, on veut 2 pers → toutes les quantités ×2.
+ */
+function scaleIngredients(ingredients: any[], recipeServings: number, targetServings: number): any[] {
+  const base = recipeServings && recipeServings > 0 ? recipeServings : 1;
+  const factor = targetServings / base;
+  return (ingredients || []).map((ing: any) => {
+    const qtyNum = parseFloat(ing.quantity);
+    if (isNaN(qtyNum)) return ing; // quantité non numérique → inchangée
+    const scaled = qtyNum * factor;
+    // Arrondi propre : entier si proche, sinon 1 décimale
+    const rounded = Math.round(scaled * 10) / 10;
+    return { ...ing, quantity: String(rounded % 1 === 0 ? Math.round(rounded) : rounded) };
+  });
+}
+
 function buildComposedMeal(
   mealType: MealType,
   pool: Recipe[],
   usedRecipeIds: Set<string>,
-  dayIdx: number
+  dayIdx: number,
+  targetServings: number = 1
 ): any {
   const roles = MEAL_COMPOSITION[mealType];
   const components: any[] = [];
@@ -146,9 +165,9 @@ function buildComposedMeal(
         name: pick.name,
         emoji: pick.emoji,
         time: pick.timeMinutes,
-        servings: pick.servings,
+        servings: targetServings,
         difficulty: pick.difficulty,
-        ingredients: pick.ingredients,
+        ingredients: scaleIngredients(pick.ingredients as any[], pick.servings || 1, targetServings),
         steps: pick.steps,
         nutrition: pick.nutrition,
         tags: pick.tags,
@@ -167,7 +186,8 @@ function buildComposedMeal(
         roleLabel: 'Plat',
         recipe: {
           id: pick.id, name: pick.name, emoji: pick.emoji, time: pick.timeMinutes,
-          servings: pick.servings, difficulty: pick.difficulty, ingredients: pick.ingredients,
+          servings: targetServings, difficulty: pick.difficulty,
+          ingredients: scaleIngredients(pick.ingredients as any[], pick.servings || 1, targetServings),
           steps: pick.steps, nutrition: pick.nutrition, tags: pick.tags,
         },
       });
@@ -229,7 +249,15 @@ function computeDayCost(meals: any[]): number {
 }
 
 export async function generateWeekPlan(options: GenerateOptions) {
-  const allRecipes = await prisma.recipe.findMany();
+  const allRecipesRaw = await prisma.recipe.findMany();
+  // Palier récompense : les recettes premium ne sont incluses dans le plan
+  // que si l'utilisateur a parrainé au moins 5 amis.
+  const PREMIUM_THRESHOLD = 5;
+  const invitedCount = await prisma.user.count({ where: { invitedBy: options.userId } });
+  const premiumUnlocked = invitedCount >= PREMIUM_THRESHOLD;
+  const allRecipes = premiumUnlocked
+    ? allRecipesRaw
+    : allRecipesRaw.filter((r: any) => !((r.tags as string[]) || []).includes('premium'));
 
   if (!allRecipes.length) {
     throw new Error("Aucune recette dans la base. Redémarre le backend pour lancer le seeding.");
@@ -274,7 +302,7 @@ export async function generateWeekPlan(options: GenerateOptions) {
 
     const meals: any[] = [];
     for (const mealType of MEAL_TYPES) {
-      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx);
+      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx, options.servings || 1);
       meals.push(meal);
     }
 
@@ -294,6 +322,11 @@ export async function generateWeekPlan(options: GenerateOptions) {
   const estimatedCost = Math.round(days.reduce((s: number, d: any) => s + (d.cost || 0), 0) * 10) / 10;
 
   const weekPlanId = generateId();
+  // IMPORTANT : supprimer les anciens plans de l'utilisateur avant d'en créer un nouveau.
+  // Sinon les plans s'accumulent en base et /meals/current peut en renvoyer un différent
+  // à chaque appel (tri instable quand plusieurs plans ont un createdAt proche).
+  // Les shopping lists liées sont supprimées en cascade (onDelete: Cascade dans le schema).
+  await prisma.weekPlan.deleteMany({ where: { userId: options.userId } });
   await prisma.weekPlan.create({
     data: {
       id: weekPlanId,
@@ -347,7 +380,13 @@ export async function regeneratePlanFromToday(options: GenerateOptions) {
     };
   }
 
-  const allRecipes = await prisma.recipe.findMany();
+  const allRecipesRaw = await prisma.recipe.findMany();
+  const PREMIUM_THRESHOLD = 5;
+  const invitedCount = await prisma.user.count({ where: { invitedBy: options.userId } });
+  const premiumUnlocked = invitedCount >= PREMIUM_THRESHOLD;
+  const allRecipes = premiumUnlocked
+    ? allRecipesRaw
+    : allRecipesRaw.filter((r: any) => !((r.tags as string[]) || []).includes('premium'));
   if (!allRecipes.length) {
     throw new Error('Aucune recette dans la base.');
   }
@@ -378,7 +417,7 @@ export async function regeneratePlanFromToday(options: GenerateOptions) {
   const regeneratedDays = daysToRegen.map((day: any, dayIdx: number) => {
     const meals: any[] = [];
     for (const mealType of MEAL_TYPES) {
-      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx);
+      const meal = buildComposedMeal(mealType, sortedPools[mealType], usedRecipeIds, dayIdx, options.servings || 1);
       meals.push(meal);
     }
     return {
@@ -422,28 +461,113 @@ export async function regeneratePlanFromToday(options: GenerateOptions) {
   };
 }
 
+/**
+ * Ré-échelonne le plan EXISTANT au nouveau nombre de personnes SANS changer les recettes.
+ * On repart des recettes d'origine (base) pour récupérer les quantités de base,
+ * puis on applique le nouveau facteur. Les noms de recettes restent identiques.
+ */
+export async function rescalePlanServings(userId: string, targetServings: number) {
+  const existing = await prisma.weekPlan.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!existing) return null;
+
+  // Table des recettes de base (pour retrouver les quantités originales + servings d'origine)
+  const allRecipes = await prisma.recipe.findMany();
+  const byId: Record<string, any> = {};
+  for (const r of allRecipes) byId[r.id] = r;
+
+  const days = (existing.days as any[]) || [];
+
+  const rescaledDays = days.map((day: any) => {
+    const meals = (day.meals || []).map((meal: any) => {
+      // Ré-échelonner chaque composante à partir de la recette de base
+      const components = (meal.components || []).map((c: any) => {
+        const base = byId[c.recipe?.id];
+        if (!base) return c; // recette introuvable → on garde tel quel
+        return {
+          ...c,
+          recipe: {
+            ...c.recipe,
+            servings: targetServings,
+            ingredients: scaleIngredients(base.ingredients as any[], base.servings || 1, targetServings),
+          },
+        };
+      });
+
+      // Rétrocompat : meal.recipe (composante principale)
+      let recipe = meal.recipe;
+      if (recipe && byId[recipe.id]) {
+        const base = byId[recipe.id];
+        recipe = {
+          ...recipe,
+          servings: targetServings,
+          ingredients: scaleIngredients(base.ingredients as any[], base.servings || 1, targetServings),
+        };
+      }
+
+      const newMeal = { ...meal, components, recipe };
+      return newMeal;
+    });
+
+    return {
+      ...day,
+      meals,
+      cost: computeDayCost(meals),
+      mealCosts: {
+        breakfast: computeMealCost(meals.find((m: any) => m.type === 'breakfast')),
+        lunch: computeMealCost(meals.find((m: any) => m.type === 'lunch')),
+        dinner: computeMealCost(meals.find((m: any) => m.type === 'dinner')),
+      },
+    };
+  });
+
+  const estimatedCost = Math.round(rescaledDays.reduce((s: number, d: any) => s + (d.cost || 0), 0) * 10) / 10;
+
+  await prisma.weekPlan.update({
+    where: { id: existing.id },
+    data: { days: rescaledDays, estimatedCost },
+  });
+
+  return {
+    id: existing.id,
+    startDate: existing.startDate,
+    endDate: existing.endDate,
+    days: rescaledDays,
+    budget: existing.budget,
+    estimatedCost,
+  };
+}
+
 export async function generateShoppingList(userId: string, weekPlan: any) {
   const itemsByKey: Record<string, any> = {};
 
   for (const day of weekPlan.days) {
     for (const meal of day.meals) {
-      const ingredients = meal.recipe.ingredients as any[];
-      for (const ing of ingredients) {
-        const key = `${ing.name}__${ing.unit}`;
-        if (itemsByKey[key]) {
-          const currentQty = parseFloat(itemsByKey[key].quantity) || 0;
-          const addQty = parseFloat(ing.quantity) || 0;
-          itemsByKey[key].quantity = String(currentQty + addQty);
-        } else {
-          itemsByKey[key] = {
-            id: generateId(),
-            name: ing.name,
-            quantity: ing.quantity,
-            unit: ing.unit,
-            category: ing.category || 'autres',
-            checked: false,
-            estimatedPrice: estimateIngredientPrice(ing),
-          };
+      // Inclure TOUTES les composantes (entrée + plat + dessert...), pas juste meal.recipe.
+      const parts = (meal.components && meal.components.length > 0)
+        ? meal.components.map((c: any) => c.recipe)
+        : (meal.recipe ? [meal.recipe] : []);
+      for (const r of parts) {
+        const ingredients = (r?.ingredients || []) as any[];
+        for (const ing of ingredients) {
+          const key = `${ing.name}__${ing.unit}`;
+          if (itemsByKey[key]) {
+            const currentQty = parseFloat(itemsByKey[key].quantity) || 0;
+            const addQty = parseFloat(ing.quantity) || 0;
+            itemsByKey[key].quantity = String(currentQty + addQty);
+          } else {
+            itemsByKey[key] = {
+              id: generateId(),
+              name: ing.name,
+              quantity: ing.quantity,
+              unit: ing.unit,
+              category: ing.category || 'autres',
+              checked: false,
+              estimatedPrice: estimateIngredientPrice(ing),
+            };
+          }
         }
       }
     }

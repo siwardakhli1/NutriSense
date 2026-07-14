@@ -6,7 +6,7 @@ import { api } from '@/services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, referralCode?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
 }
@@ -150,12 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
+  const register = useCallback(async (name: string, email: string, password: string, referralCode?: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     const response = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
       '/auth/register',
-      { name, email, password }
+      { name, email, password, ...(referralCode?.trim() ? { referralCode: referralCode.trim() } : {}) }
     );
 
     if (!response.success || !response.data) {
