@@ -29,7 +29,7 @@ function getTodayStr() {
 export default function PlanScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
-  const { weekPlan, isLoading, error, refreshPlan, clearError, generatePlan, preferences } = useMealPlan();
+  const { weekPlan, isLoading, error, refreshPlan, clearError, generatePlan, regenerateFromToday, preferences } = useMealPlan();
   const { isShaking, startListening } = useAccelerometer();
   const { shareWeekPlan } = useShare();
   const router = useRouter();
@@ -39,17 +39,15 @@ export default function PlanScreen() {
   const [showAllIngredients, setShowAllIngredients] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [monthCalendarOpen, setMonthCalendarOpen] = useState(false);
-  // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
-  // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
-  // ses clics ne sont JAMAIS écrasés.
+
   const didSelectTodayRef = React.useRef(false);
   useEffect(() => {
-    if (didSelectTodayRef.current) return;      // déjà fait → on ne touche plus
+    if (didSelectTodayRef.current) return;     
     if (!weekPlan?.days || weekPlan.days.length === 0) return;
     const todayStr = getTodayStr();
     const idx = weekPlan.days.findIndex((d: any) => d.date === todayStr);
     setSelectedDay(idx >= 0 ? idx : 0);
-    didSelectTodayRef.current = true;           // marqué comme fait pour toujours
+    didSelectTodayRef.current = true;          
   }, [weekPlan]);
 
   // Shake to refresh (accéléromètre)
@@ -58,12 +56,7 @@ export default function PlanScreen() {
     return () => cleanup?.();
   }, []);
 
-  // (Shake-to-refresh désactivé : évitons tout rechargement involontaire du plan)
-  // useEffect(() => {
-  //   if (isShaking && !isLoading) {
-  //     refreshPlan();
-  //   }
-  // }, [isShaking]);
+ 
 
   // Marquer la fin du chargement initial
   useEffect(() => {
@@ -76,11 +69,6 @@ export default function PlanScreen() {
       generatePlan();
     }
   }, [initialLoadDone, weekPlan, isLoading]);
-
-  // (Auto-régénération d'expiration RETIRÉE : elle pouvait régénérer le plan
-  //  involontairement. L'utilisateur régénère manuellement via le bouton 🔄 si besoin.)
-
-  // (Retiré : le refresh auto à chaque focus rechargeait le plan inutilement)
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -163,9 +151,9 @@ export default function PlanScreen() {
                 <Ionicons name="share-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={generatePlan}
+                onPress={regenerateFromToday}
                 accessibilityRole="button"
-                accessibilityLabel="Régénérer le plan"
+                accessibilityLabel="Régénérer le plan à partir d'aujourd'hui (les jours passés sont conservés)"
                 style={{
                   backgroundColor: colors.surfaceVariant,
                   borderRadius: 12,
@@ -320,8 +308,6 @@ export default function PlanScreen() {
         todayStr={(() => {
           const realToday = getTodayStr();
           const dates = weekPlan?.days?.map((d) => d.date) ?? [];
-          // Si aujourd'hui est dans le plan, on l'utilise. Sinon, le plan démarre
-          // aujourd'hui par design → on prend son premier jour comme référence.
           if (dates.includes(realToday)) return realToday;
           return dates[0] ?? realToday;
         })()}

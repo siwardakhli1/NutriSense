@@ -25,7 +25,7 @@ interface Recipe {
 
 // Convertit une Date en 'YYYY-MM-DD' en heure LOCALE (jamais UTC),
 // pour éviter tout décalage d'un jour dû au fuseau horaire.
-function toLocalDateStr(d: Date): string {
+export function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -120,7 +120,7 @@ export function splitByMealType(recipes: Recipe[]): Record<MealType, Recipe[]> {
  * facteur = targetServings / (servings de la recette).
  * Ex : recette pour 1 pers, on veut 2 pers → toutes les quantités ×2.
  */
-function scaleIngredients(ingredients: any[], recipeServings: number, targetServings: number): any[] {
+export function scaleIngredients(ingredients: any[], recipeServings: number, targetServings: number): any[] {
   const base = recipeServings && recipeServings > 0 ? recipeServings : 1;
   const factor = targetServings / base;
   return (ingredients || []).map((ing: any) => {
@@ -227,7 +227,7 @@ function buildComposedMeal(
  * Coût réel (€) d'un repas = somme du prix de tous les ingrédients
  * de toutes ses composantes (entrée + plat + dessert...).
  */
-function computeMealCost(meal: any): number {
+export function computeMealCost(meal: any): number {
   const parts = (meal.components && meal.components.length > 0)
     ? meal.components.map((c: any) => c.recipe)
     : (meal.recipe ? [meal.recipe] : []);
@@ -243,7 +243,7 @@ function computeMealCost(meal: any): number {
 /**
  * Coût réel (€) d'une journée = somme du coût de ses repas.
  */
-function computeDayCost(meals: any[]): number {
+export function computeDayCost(meals: any[]): number {
   const total = meals.reduce((s, m) => s + computeMealCost(m), 0);
   return Math.round(total * 10) / 10;
 }

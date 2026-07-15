@@ -296,6 +296,9 @@ export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponen
 
   const todayStr = getTodayStrParis();
   const isFuture = !!date && date > todayStr;
+  // Jour passé : on peut CONSULTER ce qui a été mangé, mais pas MODIFIER.
+  const isPast = !!date && date < todayStr;
+  const isLocked = isFuture || isPast; // cases verrouillées si futur OU passé
 
   // Charger l'état "mangé" de chaque composante
   useEffect(() => {
@@ -327,7 +330,7 @@ export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponen
   }, [date, meal?.type]);
 
   const toggleComponent = async (recipe: any) => {
-    if (!date || isFuture) return;
+    if (!date || isLocked) return; // pas de modif sur jour passé ou futur
     const rid = recipe.id;
     if (loadingIds.has(rid)) return; // ne bloque que CETTE composante
 
@@ -410,6 +413,14 @@ export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponen
           elevation: 2,
         }}
       >
+        {/* Bandeau "consultation seule" pour un jour passé */}
+        {isPast && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surfaceVariant, borderRadius: 8 }}>
+            <Ionicons name="eye-outline" size={13} color={colors.textMuted} />
+            <Text style={{ fontSize: 11, color: colors.textSecondary }}>Jour écoulé — consultation seule</Text>
+          </View>
+        )}
+
         {/* En-tête : calories + temps totaux */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -448,20 +459,20 @@ export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponen
               {/* Checkbox "j'ai mangé" */}
               <TouchableOpacity
                 onPress={() => toggleComponent(recipe)}
-                disabled={isLoading || isFuture}
+                disabled={isLoading || isLocked}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: isEaten, disabled: isFuture }}
+                accessibilityState={{ checked: isEaten, disabled: isLocked }}
                 accessibilityLabel={`${isEaten ? 'Annuler' : 'Marquer mangé'} : ${recipe.name}`}
                 style={{
                   width: 26,
                   height: 26,
                   borderRadius: 8,
                   borderWidth: 2,
-                  borderColor: isFuture ? colors.border : colors.primary,
-                  backgroundColor: isEaten ? colors.primary : 'transparent',
+                  borderColor: isLocked ? colors.border : colors.primary,
+                  backgroundColor: isEaten ? (isPast ? colors.textMuted : colors.primary) : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: isFuture ? 0.5 : 1,
+                  opacity: isLocked ? 0.6 : 1,
                 }}
               >
                 {isEaten && <Ionicons name="checkmark" size={16} color="#fff" />}
