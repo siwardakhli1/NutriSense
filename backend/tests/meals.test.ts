@@ -4,6 +4,7 @@
 // ==========================================
 import request from 'supertest';
 import { prisma } from '../src/config/database';
+import { seedRecipes } from '../src/db/seed';
 
 ;(process.env as any).NODE_ENV = 'test';
 
@@ -13,6 +14,14 @@ let email = '';
 
 beforeAll(async () => {
   app = (await import('../src/index')).default;
+
+  // S'assurer que la base contient les recettes (nécessaire pour générer un plan).
+  // En test, le serveur n'est pas démarré via start(), donc le seed n'a pas tourné.
+  const recipeCount = await prisma.recipe.count();
+  if (recipeCount === 0) {
+    await seedRecipes();
+  }
+
   await prisma.user.deleteMany({ where: { email: { contains: 'test-meals-' } } });
 
   email = `test-meals-${Date.now()}@example.com`;
