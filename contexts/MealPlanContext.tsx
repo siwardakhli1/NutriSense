@@ -12,6 +12,7 @@ interface MealPlanState {
   preferences: UserPreferences;
   isLoading: boolean;
   error: string | null;
+  initialLoadDone: boolean;
 }
 
 interface MealPlanContextType extends MealPlanState {
@@ -33,7 +34,8 @@ type Action =
   | { type: 'SET_SHOPPING'; payload: ShoppingList | null }
   | { type: 'SET_RECIPES'; payload: Recipe[] }
   | { type: 'SET_PREFERENCES'; payload: UserPreferences }
-  | { type: 'UPDATE_SHOPPING_ITEMS'; payload: any[] };
+  | { type: 'UPDATE_SHOPPING_ITEMS'; payload: any[] }
+  | { type: 'SET_INITIAL_LOAD_DONE' };
 
 const defaultPreferences: UserPreferences = {
   budget: 60,
@@ -52,6 +54,7 @@ const initialState: MealPlanState = {
   preferences: defaultPreferences,
   isLoading: false,
   error: null,
+  initialLoadDone: false,
 };
 
 function mealPlanReducer(state: MealPlanState, action: Action): MealPlanState {
@@ -74,6 +77,8 @@ function mealPlanReducer(state: MealPlanState, action: Action): MealPlanState {
         ...state,
         shoppingList: { ...state.shoppingList, items: action.payload },
       };
+    case 'SET_INITIAL_LOAD_DONE':
+      return { ...state, initialLoadDone: true };
     default:
       return state;
   }
@@ -95,31 +100,42 @@ export const MealPlanContext = createContext<MealPlanContextType>({
 export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(mealPlanReducer, initialState);
 
-  // Charge le plan courant + préférences au démarrage
+  // Charge le plan courant + préférences au démarrage.
+  // IMPORTANT : on met isLoading=true PENDANT tout le chargement, pour que
+  // l'écran Plan ne croie pas (à tort) qu'il n'y a aucun plan et n'en génère
+  // pas un nouveau par erreur. On marque aussi initialLoadDone à la toute fin,
+  // une fois que le plan est réellement chargé (ou confirmé absent).
   const loadCurrent = useCallback(async () => {
-    // Préférences
-    const prefsRes = await api.get<UserPreferences>('/preferences');
-    if (prefsRes.success && prefsRes.data) {
-      dispatch({ type: 'SET_PREFERENCES', payload: prefsRes.data });
-    }
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      // Préférences
+      const prefsRes = await api.get<UserPreferences>('/preferences');
+      if (prefsRes.success && prefsRes.data) {
+        dispatch({ type: 'SET_PREFERENCES', payload: prefsRes.data });
+      }
 
-    // Plan courant (dernier généré)
-    const planRes = await api.get<{
-      weekPlan: WeekPlan | null;
-      shoppingList: ShoppingList | null;
-      recipes: Recipe[];
-    }>('/meals/current');
+      // Plan courant (dernier généré)
+      const planRes = await api.get<{
+        weekPlan: WeekPlan | null;
+        shoppingList: ShoppingList | null;
+        recipes: Recipe[];
+      }>('/meals/current');
 
-    if (planRes.success && planRes.data) {
-      // On charge simplement le plan existant SANS jamais le régénérer automatiquement.
-      // (Toute auto-régénération a été retirée : elle changeait le plan involontairement.
-      //  L'utilisateur régénère manuellement via le bouton 🔄 s'il le souhaite.)
-      dispatch({ type: 'SET_PLAN', payload: planRes.data.weekPlan });
-      dispatch({ type: 'SET_SHOPPING', payload: planRes.data.shoppingList });
-      dispatch({ type: 'SET_RECIPES', payload: planRes.data.recipes });
+      if (planRes.success && planRes.data) {
+        // On charge simplement le plan existant SANS jamais le régénérer.
+        dispatch({ type: 'SET_PLAN', payload: planRes.data.weekPlan });
+        dispatch({ type: 'SET_SHOPPING', payload: planRes.data.shoppingList });
+        dispatch({ type: 'SET_RECIPES', payload: planRes.data.recipes });
+      } else {
+        dispatch({ type: 'SET_PLAN', payload: null });
+      }
+    } finally {
+      // Le chargement est terminé (que le plan existe ou non).
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_INITIAL_LOAD_DONE' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Chargement UNIQUE au montage : ne se relance pas quand les préférences changent.
+  }, []); // Chargement UNIQUE au montage.
 
   // Charge le plan une seule fois au démarrage de l'app.
   useEffect(() => { loadCurrent(); }, [loadCurrent]);
@@ -147,7 +163,7 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.preferences]);
 
-const regenerateFromToday = useCallback(async () => {
+  const regenerateFromToday = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     const response = await api.post<{
@@ -169,7 +185,7 @@ const regenerateFromToday = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: false });
   }, [state.preferences]);
 
-    const toggleShoppingItem = useCallback(async (itemId: string) => {
+  const toggleShoppingItem = useCallback(async (itemId: string) => {
     if (!state.shoppingList) return;
     // Optimistic update UI d'abord
     const optimisticItems = state.shoppingList.items.map((it: any) =>

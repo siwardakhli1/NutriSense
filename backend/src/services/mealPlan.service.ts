@@ -32,6 +32,20 @@ export function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Renvoie le LUNDI de la semaine contenant la date donnée (semaine calendaire).
+// Le plan couvre une semaine fixe lundi->dimanche : c'est le modèle mental de
+// l'utilisateur (on planifie ses courses "pour la semaine") et cela garde les
+// jours écoulés visibles en lecture seule (historique nutritionnel).
+export function getMonday(d: Date): Date {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  const day = date.getDay(); // 0=dimanche, 1=lundi, ..., 6=samedi
+  // Décalage pour revenir au lundi : dimanche(0) -> -6, sinon 1-day.
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date;
+}
+
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 type MealType = typeof MEAL_TYPES[number];
 
@@ -263,8 +277,8 @@ export async function generateWeekPlan(options: GenerateOptions) {
     throw new Error("Aucune recette dans la base. Redémarre le backend pour lancer le seeding.");
   }
 
-  const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0);
+  // Plan à semaine FIXE : démarre au lundi de la semaine courante (lundi->dimanche).
+  const startDate = getMonday(new Date());
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 6);
 

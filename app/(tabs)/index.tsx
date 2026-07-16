@@ -29,7 +29,7 @@ function getTodayStr() {
 export default function PlanScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
-  const { weekPlan, isLoading, error, refreshPlan, clearError, generatePlan, regenerateFromToday, preferences } = useMealPlan();
+  const { weekPlan, isLoading, error, refreshPlan, clearError, generatePlan, regenerateFromToday, preferences, initialLoadDone } = useMealPlan();
   const { isShaking, startListening } = useAccelerometer();
   const { shareWeekPlan } = useShare();
   const router = useRouter();
@@ -37,17 +37,18 @@ export default function PlanScreen() {
   const [selectedDay, setSelectedDay] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [showAllIngredients, setShowAllIngredients] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [monthCalendarOpen, setMonthCalendarOpen] = useState(false);
-
+  // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
+  // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
+  // ses clics ne sont JAMAIS écrasés.
   const didSelectTodayRef = React.useRef(false);
   useEffect(() => {
-    if (didSelectTodayRef.current) return;     
+    if (didSelectTodayRef.current) return;      // déjà fait → on ne touche plus
     if (!weekPlan?.days || weekPlan.days.length === 0) return;
     const todayStr = getTodayStr();
     const idx = weekPlan.days.findIndex((d: any) => d.date === todayStr);
     setSelectedDay(idx >= 0 ? idx : 0);
-    didSelectTodayRef.current = true;          
+    didSelectTodayRef.current = true;           // marqué comme fait pour toujours
   }, [weekPlan]);
 
   // Shake to refresh (accéléromètre)
@@ -56,12 +57,7 @@ export default function PlanScreen() {
     return () => cleanup?.();
   }, []);
 
- 
-
-  // Marquer la fin du chargement initial
-  useEffect(() => {
-    if (!isLoading && !initialLoadDone) setInitialLoadDone(true);
-  }, [isLoading, initialLoadDone]);
+  // (Shake-to-refresh désactivé : évitons tout rechargement involontaire du plan)
 
   // Générer SEULEMENT après le chargement initial, s'il n'y a vraiment aucun plan
   useEffect(() => {
