@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { prisma } from '../config/database';
 import { authMiddleware, AuthRequest } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-import { generateWeekPlan, generateShoppingList, regeneratePlanFromToday, rescalePlanServings } from '../services/mealPlan.service';
+import { generateWeekPlan, generateShoppingList, regeneratePlanFromToday, rescalePlanServings, getMonday, toLocalDateStr } from '../services/mealPlan.service';
 
 const router = Router();
 
@@ -127,11 +127,32 @@ router.post('/regenerate-from-today', authMiddleware, validate(generateSchema), 
 router.get('/current', authMiddleware, async (req: AuthRequest, res: Response) => {
   const userId = req.userId!;
 
-  const weekPlan = await prisma.weekPlan.findFirst({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
+  // Semaine courante (lundi de cette semaine).
+  const thisMonday = toLocalDateStr(getMonday(new Date()));
+
+  // On cherche d'abord le plan de LA SEMAINE COURANTE.
+  let weekPlan = await prisma.weekPlan.findFirst({
+    where: { userId, startDate: thisMonday },
     include: { shoppingLists: { take: 1, orderBy: { createdAt: 'desc' } } },
   });
+
+  // Bascule automatique : si aucun plan pour la semaine courante (nouvelle semaine),
+  // on le génère à partir des préférences de l'utilisateur. Ainsi, au changement
+  // de semaine, l'utilisateur retrouve un plan à jour sans action manuelle.
+  if (!weekPlan) {
+    const prefs = await prisma.userPreference.findUnique({ where: { userId } });
+    await generateWeekPlan({
+      userId,
+      budget: prefs?.budget ?? 60,
+      goal: prefs?.goal ?? 'healthy',
+      dietary: (prefs?.dietary as string[]) ?? [],
+      servings: prefs?.servings ?? 2,
+    });
+    weekPlan = await prisma.weekPlan.findFirst({
+      where: { userId, startDate: thisMonday },
+      include: { shoppingLists: { take: 1, orderBy: { createdAt: 'desc' } } },
+    });
+  }
 
   if (!weekPlan) {
     return res.json({ weekPlan: null, shoppingList: null, recipes: [] });
