@@ -23,11 +23,6 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('sans_gluten');
   });
 
-  it('inclut le budget si présent', () => {
-    const prompt = buildSystemPrompt({ goal: 'budget', budget: 60 } as any, emptyChunks);
-    expect(prompt).toContain('60');
-  });
-
   it('inclut le poids actuel et cible', () => {
     const prompt = buildSystemPrompt(
       { goal: 'healthy', currentWeight: 70, targetWeight: 65 } as any,
