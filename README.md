@@ -10,7 +10,7 @@ Application mobile multilingue de nutrition combinant planification de repas, sc
 
 ---
 
-NutriSense réunit dans une seule application la planification des repas, le suivi nutritionnel et la gestion des courses, avec des recommandations adaptées aux préférences, au budget et aux objectifs de santé de chaque utilisateur. L'application est multilingue (5 langues, dont l'arabe en RTL) et propose un thème clair/sombre.
+NutriSense réunit dans une seule application la planification des repas, le suivi nutritionnel et la gestion des courses, avec des recommandations adaptées aux préférences alimentaires et aux objectifs de santé de chaque utilisateur. L'application est multilingue (5 langues, dont l'arabe en RTL) et propose un thème clair/sombre.
 
 ## Sommaire
 
@@ -27,6 +27,7 @@ NutriSense réunit dans une seule application la planification des repas, le sui
 - [CI/CD](#cicd)
 - [Multilingue](#multilingue)
 - [Conformité RGPD](#conformité-rgpd)
+- [Compte de démonstration](#compte-de-démonstration)
 - [Auteure](#auteure)
 
 ---
@@ -67,7 +68,7 @@ NutriSense réunit dans une seule application la planification des repas, le sui
 ### 🛒 Liste de courses
 - Liste générée automatiquement à partir du plan de la semaine
 - Regroupement des ingrédients de tous les repas de la semaine
-- Estimation du coût total des courses pour aider à maîtriser son budget
+- Estimation du coût total des courses pour aider à mieux gérer ses dépenses
 
 ### 📊 Suivi nutritionnel
 - Tableau de bord : série de jours suivis, taux d'adhérence, points de repère personnalisés
@@ -290,7 +291,7 @@ NutriSense/
 │   ├── admin-recipes.tsx         # Gestion des recettes
 │   ├── legal/                    # Mentions légales et conditions
 │   ├── privacy.tsx               # Politique de confidentialité
-│   └── _layout.tsx               # Layout 
+│   └── _layout.tsx               # Layout racine (garde d'authentification)
 ├── components/                   # Composants réutilisables
 ├── contexts/                     # Auth, MealPlan, Theme, Language
 ├── hooks/                        # useAppContexts, useNativeAPIs, useShare
@@ -479,6 +480,19 @@ La gestion RTL s'appuie sur l'API native `I18nManager` de React Native. Le chang
 - **Article 32** – Sécurité du traitement : bcryptjs, JWT, prêt pour HTTPS
 
 Toutes les relations sensibles utilisent `onDelete: Cascade`, garantissant la suppression complète des données lors de la suppression d'un compte.
+
+---
+
+## Compte de démonstration
+
+Un compte administrateur est disponible pour tester l'espace d'administration (gestion des utilisateurs, des recettes et statistiques globales) :
+
+| Champ | Valeur |
+|---|---|
+| Email | `admin@gmail.com` |
+| Mot de passe | `admin1234` |
+
+L'accès à cet espace est protégé côté serveur par un middleware de vérification de rôle (`adminMiddleware`) : un utilisateur standard qui tente d'y accéder reçoit une réponse **403 Forbidden**. Le rôle est stocké en base de données et ne peut pas être modifié depuis l'application.
 
 ---
 
