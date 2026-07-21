@@ -32,6 +32,24 @@ export function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Renvoie la date du jour (AAAA-MM-JJ) sur le fuseau Europe/Paris.
+// IMPORTANT : le serveur de production (Render) tourne en UTC ; sans ce
+// calcul, « aujourd'hui » pourrait être décalé d'un jour et régénérer par
+// erreur un jour déjà passé. On aligne donc le serveur sur le fuseau de
+// référence de l'application.
+export function getTodayStrParis(): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    return toLocalDateStr(new Date());
+  }
+}
+
 // Renvoie le LUNDI de la semaine contenant la date donnée (semaine calendaire).
 // Le plan couvre une semaine fixe lundi->dimanche : c'est le modèle mental de
 // l'utilisateur (on planifie ses courses "pour la semaine") et cela garde les
@@ -376,8 +394,10 @@ export async function regeneratePlanFromToday(options: GenerateOptions) {
     return generateWeekPlan(options);
   }
 
-  // Aujourd'hui en date LOCALE (cohérent avec les dates des jours du plan)
-  const todayStr = toLocalDateStr(new Date());
+  // Aujourd'hui sur le fuseau Europe/Paris (cohérent avec les dates des jours
+  // du plan et avec l'affichage côté application). Évite de régénérer un jour
+  // déjà passé à cause du fuseau UTC du serveur.
+  const todayStr = getTodayStrParis();
 
   const existingDays = (existing.days as any[]) || [];
   const pastDays = existingDays.filter((d) => d.date < todayStr);

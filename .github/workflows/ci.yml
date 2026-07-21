@@ -1,7 +1,7 @@
 # ==========================================
 # CI - Intégration continue NutriSense
 # ==========================================
-# Se déclenche à chaque push et pull request sur main/develop
+# Se déclenche à chaque push et pull request sur main
 # Vérifie :
 #   1. Le backend compile (TypeScript)
 #   2. Les tests unitaires Jest passent
@@ -12,9 +12,9 @@ name: CI - NutriSense
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 # Empêche plusieurs runs simultanés sur la même branche
 concurrency:

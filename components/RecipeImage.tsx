@@ -109,10 +109,36 @@ const KEYWORDS: { keys: string[]; emoji: string }[] = [
   { keys: ['vin'], emoji: '🍷' },
   { keys: ['eau'], emoji: '💧' },
 
+  // Maghreb / Moyen-Orient
+  { keys: ['brick', 'brik', 'bourek', 'boureks'], emoji: '🥟' },
+  { keys: ['msemen', 'msemmen', 'baghrir', 'crepe mille trous'], emoji: '🫓' },
+  { keys: ['chakchouka', 'shakshuka'], emoji: '🍳' },
+  { keys: ['harira', 'chorba'], emoji: '🍲' },
+  { keys: ['makroud', 'baklava', 'baklawa', 'cornes de gazelle', 'chebakia', 'zlabia', 'kalb el louz'], emoji: '🍯' },
+  { keys: ['tajine', 'tagine'], emoji: '🥘' },
+  { keys: ['falafel'], emoji: '🧆' },
+  { keys: ['houmous', 'hummus', 'moutabal', 'baba ganoush'], emoji: '🫓' },
+  { keys: ['chawarma', 'shawarma'], emoji: '🌯' },
+  { keys: ['mechoui', 'agneau', 'gigot'], emoji: '🍖' },
+  { keys: ['dattes', 'datte'], emoji: '🌴' },
+  { keys: ['loukoum'], emoji: '🍬' },
+
+  // Autres plats du monde
+  { keys: ['gnocchi', 'lasagne', 'lasagnes', 'raviolis italiens'], emoji: '🍝' },
+  { keys: ['paella'], emoji: '🥘' },
+  { keys: ['pad thai', 'wok', 'saute asiatique'], emoji: '🍜' },
+  { keys: ['nem', 'rouleau de printemps', 'samoussa', 'samosa'], emoji: '🥟' },
+  { keys: ['galette', 'blini'], emoji: '🥞' },
+  { keys: ['quiche', 'tarte salee', 'flammekueche'], emoji: '🥧' },
+  { keys: ['gratin', 'lasagne'], emoji: '🧀' },
+  { keys: ['chili', 'haricots rouges'], emoji: '🌶️' },
+  { keys: ['hot dog', 'hotdog'], emoji: '🌭' },
+  { keys: ['frites'], emoji: '🍟' },
+  { keys: ['popcorn'], emoji: '🍿' },
+
   // Autres
   { keys: ['pain', 'baguette'], emoji: '🥖' },
   { keys: ['legume', 'ratatouille'], emoji: '🥗' },
-  { keys: ['houmous'], emoji: '🫓' },
 ];
 
 function normalize(str: string): string {

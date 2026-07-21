@@ -26,7 +26,6 @@ export function buildSystemPrompt(context: UserContext, chunks: ReturnType<typeo
   const contextLines = [
     `Objectif utilisateur : ${context.goal || 'non défini'}`,
     context.dietary?.length ? `Régimes : ${context.dietary.join(', ')}` : null,
-    context.budget ? `Budget hebdo : ${context.budget}€` : null,
     context.currentWeight ? `Poids actuel : ${context.currentWeight} kg` : null,
     context.targetWeight ? `Poids cible : ${context.targetWeight} kg` : null,
   ].filter(Boolean);

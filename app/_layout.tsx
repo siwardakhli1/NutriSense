@@ -3,6 +3,7 @@
 // Providers, Splash screen, Routes protégées
 // ==========================================
 import React, { useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,7 +13,6 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { MealPlanProvider } from '@/contexts/MealPlanContext';
 import { useTheme, useAuth } from '@/hooks/useAppContexts';
-import { LoadingSpinner } from '@/components/ui';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,10 +48,13 @@ function RootNavigation() {
     }
   }, [user, isOnboarded, isLoading, segments]);
 
-  // Spinner seulement pendant la restauration initiale de session
-  if (isLoading && !firstLoadDone) {
-    return <LoadingSpinner fullScreen message="Chargement..." />;
-  }
+  // Le navigateur (Stack) reste TOUJOURS monté (sinon la redirection
+  // échoue). Tant que la redirection initiale n'est pas résolue, on
+  // pose un simple cache neutre PAR-DESSUS, pour éviter le flash de la
+  // page « Commencer » au démarrage.
+  const showOverlay =
+    (isLoading && !firstLoadDone) ||
+    (!isLoading && !user && segments[0] !== '(auth)');
 
   return (
     <>
@@ -74,6 +77,15 @@ function RootNavigation() {
         <Stack.Screen name="recipe/[id]" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
+      {showOverlay && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: colors.background,
+          }}
+        />
+      )}
     </>
   );
 }

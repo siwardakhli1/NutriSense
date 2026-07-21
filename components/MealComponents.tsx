@@ -272,9 +272,10 @@ interface ComposedMealCardProps {
   meal: any; // meal.components: [{ role, roleLabel, recipe }]
   date?: string;
   onPressComponent?: (recipeId?: string) => void;
+  hideHeader?: boolean; // masque le titre interne (quand un en-tête externe est utilisé)
 }
 
-export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponent }: ComposedMealCardProps) {
+export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponent, hideHeader }: ComposedMealCardProps) {
   const { colors } = useTheme();
 
   // Composantes du repas (fallback sur meal.recipe si pas de components)
@@ -385,19 +386,21 @@ export function ComposedMealCard({ label, labelIcon, meal, date, onPressComponen
 
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text
-        style={{
-          fontSize: FontSize.xs,
-          fontWeight: '700',
-          color: colors.textMuted,
-          textTransform: 'uppercase',
-          letterSpacing: 1.5,
-          marginBottom: 10,
-          paddingLeft: 4,
-        }}
-      >
-        {labelIcon} {label}
-      </Text>
+      {!hideHeader && (
+        <Text
+          style={{
+            fontSize: FontSize.xs,
+            fontWeight: '700',
+            color: colors.textMuted,
+            textTransform: 'uppercase',
+            letterSpacing: 1.5,
+            marginBottom: 10,
+            paddingLeft: 4,
+          }}
+        >
+          {labelIcon} {label}
+        </Text>
+      )}
 
       <View
         style={{

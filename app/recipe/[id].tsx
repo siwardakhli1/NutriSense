@@ -10,7 +10,7 @@ import { useTheme, useLanguage, useMealPlan } from '@/hooks/useAppContexts';
 import { RecipeImage } from '@/components/RecipeImage';
 import { useShare } from '@/hooks/useShare';
 import { useVibration } from '@/hooks/useNativeAPIs';
-import { ErrorDisplay } from '@/components/ui';
+import { ErrorDisplay, LoadingSpinner } from '@/components/ui';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
 
@@ -24,7 +24,23 @@ export default function RecipeDetailScreen() {
   const router = useRouter();
 
   const [liked, setLiked] = useState(false);
-  const recipe = getRecipeById(id);
+  const localRecipe = getRecipeById(id);
+  const [recipe, setRecipe] = useState<any>(localRecipe);
+  const [loading, setLoading] = useState(!localRecipe);
+
+  // Si la recette n'est pas disponible localement (ex : recette personnelle
+  // fraîchement créée, absente du plan en mémoire), on la charge via l'API.
+  useEffect(() => {
+    if (recipe || !id) return;
+    (async () => {
+      setLoading(true);
+      const res = await api.get<any>(`/recipes/${id}`);
+      if (res.success && res.data) {
+        setRecipe(res.data);
+      }
+      setLoading(false);
+    })();
+  }, [id, recipe]);
 
   // Charger le statut favori depuis le backend
   useEffect(() => {
@@ -36,6 +52,10 @@ export default function RecipeDetailScreen() {
       }
     })();
   }, [id]);
+
+  if (loading) {
+    return <LoadingSpinner fullScreen message={t.common.loading || 'Chargement...'} />;
+  }
 
   if (!recipe) {
     return <ErrorDisplay message="Recette introuvable" onRetry={() => router.back()} retryLabel={t.common.back} />;
@@ -177,7 +197,7 @@ export default function RecipeDetailScreen() {
           {t.recipe.ingredients}
         </Text>
         <View style={{ gap: 8, marginBottom: Spacing.lg }}>
-          {recipe.ingredients.map((ing) => (
+          {recipe.ingredients.map((ing: any) => (
             <View
               key={ing.id}
               style={{
@@ -204,7 +224,7 @@ export default function RecipeDetailScreen() {
           {t.recipe.preparation}
         </Text>
         <View style={{ gap: 14, marginBottom: Spacing.xl }}>
-          {recipe.steps.map((step, i) => (
+          {recipe.steps.map((step: string, i: number) => (
             <View key={i} style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
               <View
                 style={{

@@ -1,6 +1,7 @@
 // SCREEN - Stats (Suivi > Stats) - avec graphiques
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useAppContexts';
 import { Card } from '@/components/ui';
@@ -84,9 +85,14 @@ export default function AnalyticsScreen() {
     setRefreshing(false);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Recharge les statistiques CHAQUE FOIS que l'utilisateur revient sur
+  // cette page (après avoir validé/retiré des repas dans le plan, par ex.),
+  // afin que le suivi reflète toujours les dernières données.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

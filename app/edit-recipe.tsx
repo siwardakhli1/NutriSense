@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/useAppContexts';
 import { Card } from '@/components/ui';
 import { Spacing, FontSize, BorderRadius } from '@/constants/Colors';
 import { api } from '@/services/api';
+import { computeNutritionFromIngredients } from '@/utils/nutrition';
 
 const AVAILABLE_TAGS = [
   { id: 'breakfast', label: 'Petit-déj' },
@@ -77,6 +78,38 @@ export default function EditRecipeScreen() {
 
   const addIngredient = () => setIngredients([...ingredients, { name: '', quantity: '', unit: '' }]);
   const removeIngredient = (i: number) => setIngredients(ingredients.filter((_, idx) => idx !== i));
+
+  // Calcule automatiquement les valeurs nutritionnelles à partir des ingrédients.
+  const handleAutoNutrition = () => {
+    const validIngredients = ingredients.filter((i) => i.name.trim());
+    if (validIngredients.length === 0) {
+      Alert.alert('Aucun ingrédient', "Ajoute d'abord des ingrédients pour estimer la nutrition.");
+      return;
+    }
+    const { nutrition, matched, total } = computeNutritionFromIngredients(
+      validIngredients,
+      Number(servings) || 1
+    );
+    setCalories(String(nutrition.calories));
+    setProtein(String(nutrition.protein));
+    setCarbs(String(nutrition.carbs));
+    setFat(String(nutrition.fat));
+
+    if (matched === 0) {
+      Alert.alert(
+        'Estimation impossible',
+        "Aucun ingrédient n'a été reconnu dans la base nutritionnelle. Tu peux saisir les valeurs manuellement."
+      );
+    } else if (matched < total) {
+      Alert.alert(
+        'Estimation partielle',
+        `${matched} ingrédient(s) sur ${total} reconnu(s). Les valeurs sont une estimation, ajuste-les si besoin.`
+      );
+    } else {
+      Alert.alert('Estimation calculée', 'Les valeurs ont été estimées à partir des ingrédients. Tu peux les ajuster.');
+    }
+  };
+
   const updateIngredient = (i: number, field: keyof Ingredient, val: string) => {
     const updated = [...ingredients];
     updated[i] = { ...updated[i], [field]: val };
@@ -306,9 +339,22 @@ export default function EditRecipeScreen() {
 
             {/* Nutrition */}
             <Card style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 10 }}>
-                Nutrition (par portion)
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>
+                  Nutrition (par portion)
+                </Text>
+                <TouchableOpacity
+                  onPress={handleAutoNutrition}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16,
+                  }}
+                >
+                  <Ionicons name="calculator-outline" size={14} color="#FFFFFF" />
+                  <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Calculer</Text>
+                </TouchableOpacity>
+              </View>
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>Cal.</Text>

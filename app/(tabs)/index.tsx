@@ -19,11 +19,23 @@ const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 // Renvoie la date du jour au format YYYY-MM-DD en heure LOCALE (pas UTC).
 function getTodayStr() {
-  const n = new Date();
-  const y = n.getFullYear();
-  const m = String(n.getMonth() + 1).padStart(2, '0');
-  const d = String(n.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  // On calcule « aujourd'hui » sur le fuseau Europe/Paris, comme le reste
+  // de l'application (composants d'affichage), pour éviter toute incohérence
+  // de jour sélectionné selon le fuseau de l'appareil.
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    const n = new Date();
+    const y = n.getFullYear();
+    const m = String(n.getMonth() + 1).padStart(2, '0');
+    const d = String(n.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 }
 
 export default function PlanScreen() {
@@ -38,6 +50,10 @@ export default function PlanScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAllIngredients, setShowAllIngredients] = useState(false);
   const [monthCalendarOpen, setMonthCalendarOpen] = useState(false);
+  // Repas déplié (accordéon). Par défaut, seul le petit-déjeuner est ouvert.
+  const [expandedMeal, setExpandedMeal] = useState<'breakfast' | 'lunch' | 'dinner' | null>('breakfast');
+  const toggleMeal = (m: 'breakfast' | 'lunch' | 'dinner') =>
+    setExpandedMeal((prev) => (prev === m ? null : m));
   // Sélectionne automatiquement AUJOURD'HUI une seule fois, quand le plan
   // arrive pour la première fois. Ensuite l'utilisateur navigue librement :
   // ses clics ne sont JAMAIS écrasés.
@@ -46,9 +62,17 @@ export default function PlanScreen() {
     if (didSelectTodayRef.current) return;      // déjà fait → on ne touche plus
     if (!weekPlan?.days || weekPlan.days.length === 0) return;
     const todayStr = getTodayStr();
-    const idx = weekPlan.days.findIndex((d: any) => d.date === todayStr);
-    setSelectedDay(idx >= 0 ? idx : 0);
-    didSelectTodayRef.current = true;           // marqué comme fait pour toujours
+    // Comparaison robuste : on ne garde que la partie AAAA-MM-JJ de chaque date
+    // (au cas où une date contiendrait une heure ou des espaces).
+    const idx = weekPlan.days.findIndex(
+      (d: any) => String(d.date).slice(0, 10) === todayStr
+    );
+    if (idx >= 0) {
+      setSelectedDay(idx);
+      didSelectTodayRef.current = true;         // aujourd'hui trouvé → figé
+    }
+    // Si aujourd'hui n'est pas (encore) dans le plan, on ne marque PAS comme fait :
+    // on réessaiera au prochain rendu plutôt que de rester bloqué sur lundi.
   }, [weekPlan]);
 
   // Shake to refresh (accéléromètre)
@@ -133,7 +157,7 @@ export default function PlanScreen() {
                       return `${daysFr[i] || `Jour ${i + 1}`} ${d.date ? `(${d.date})` : ''}\n${meals}`;
                     })
                     .join('\n\n');
-                  const total = `\n\n💰 Budget estimé : ${weekPlan.estimatedCost.toFixed(1)}€ / ${preferences.budget}€`;
+                  const total = `\n\n💰 Coût estimé de la semaine : ${weekPlan.estimatedCost.toFixed(1)}€`;
                   shareWeekPlan(summary + total);
                 }}
                 accessibilityRole="button"
@@ -200,36 +224,132 @@ export default function PlanScreen() {
         {/* Meals */}
         <View style={{ padding: Spacing.lg, paddingTop: Spacing.lg }}>
           {breakfastMeal && (
-            <ComposedMealCard
-              key={`breakfast-${dayPlan?.date}`}
-              label={t.plan.breakfast}
-              labelIcon="🌅"
-              meal={breakfastMeal}
-              date={dayPlan?.date}
-              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
-            />
+            <View style={{ marginBottom: 14 }}>
+              <TouchableOpacity
+                onPress={() => toggleMeal('breakfast')}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                  paddingVertical: 14, paddingHorizontal: 16,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#6FCF97',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons name="cafe-outline" size={22} color={colors.text} />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: expandedMeal === 'breakfast' ? colors.text : colors.textSecondary }}>
+                    {t.plan.breakfast}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={expandedMeal === 'breakfast' ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+              {expandedMeal === 'breakfast' && (
+                <View style={{ marginTop: 10 }}>
+                  <ComposedMealCard
+                    key={`breakfast-${dayPlan?.date}`}
+                    label={t.plan.breakfast}
+                    labelIcon="🌅"
+                    meal={breakfastMeal}
+                    date={dayPlan?.date}
+                    onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
+                    hideHeader
+                  />
+                </View>
+              )}
+            </View>
           )}
 
           {lunchMeal && (
-            <ComposedMealCard
-              key={`lunch-${dayPlan?.date}`}
-              label={t.plan.lunch}
-              labelIcon="☀️"
-              meal={lunchMeal}
-              date={dayPlan?.date}
-              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
-            />
+            <View style={{ marginBottom: 14 }}>
+              <TouchableOpacity
+                onPress={() => toggleMeal('lunch')}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                  paddingVertical: 14, paddingHorizontal: 16,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#1A6B4A',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons name="sunny-outline" size={22} color={colors.text} />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: expandedMeal === 'lunch' ? colors.text : colors.textSecondary }}>
+                    {t.plan.lunch}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={expandedMeal === 'lunch' ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+              {expandedMeal === 'lunch' && (
+                <View style={{ marginTop: 10 }}>
+                  <ComposedMealCard
+                    key={`lunch-${dayPlan?.date}`}
+                    label={t.plan.lunch}
+                    labelIcon="☀️"
+                    meal={lunchMeal}
+                    date={dayPlan?.date}
+                    onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
+                    hideHeader
+                  />
+                </View>
+              )}
+            </View>
           )}
 
           {dinnerMeal && (
-            <ComposedMealCard
-              key={`dinner-${dayPlan?.date}`}
-              label={t.plan.dinner}
-              labelIcon="🌙"
-              meal={dinnerMeal}
-              date={dayPlan?.date}
-              onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
-            />
+            <View style={{ marginBottom: 14 }}>
+              <TouchableOpacity
+                onPress={() => toggleMeal('dinner')}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                  paddingVertical: 14, paddingHorizontal: 16,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#0D3D2A',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons name="moon-outline" size={22} color={colors.text} />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: expandedMeal === 'dinner' ? colors.text : colors.textSecondary }}>
+                    {t.plan.dinner}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={expandedMeal === 'dinner' ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+              {expandedMeal === 'dinner' && (
+                <View style={{ marginTop: 10 }}>
+                  <ComposedMealCard
+                    key={`dinner-${dayPlan?.date}`}
+                    label={t.plan.dinner}
+                    labelIcon="🌙"
+                    meal={dinnerMeal}
+                    date={dayPlan?.date}
+                    onPressComponent={(id) => id && router.push(`/recipe/${id}`)}
+                    hideHeader
+                  />
+                </View>
+              )}
+            </View>
           )}
 
           {/* Section ingrédients du jour */}

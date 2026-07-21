@@ -38,13 +38,6 @@ interface Product {
 }
 
 // Codes-barres de démonstration (produits réellement dans Open Food Facts)
-const DEMO_BARCODES = [
-  { code: '3017620422003', name: 'Nutella' },
-  { code: '5449000000996', name: 'Coca-Cola' },
-  { code: '3229820129488', name: 'Chocapic' },
-  { code: '8000500310427', name: 'Kinder Bueno' },
-];
-
 interface AlternativeProduct {
   barcode: string;
   name: string;
@@ -202,30 +195,6 @@ export default function ScannerScreen() {
           >
             <Ionicons name="search" size={20} color={manualBarcode ? '#fff' : colors.textMuted} />
           </TouchableOpacity>
-        </View>
-      </Card>
-
-      {/* Codes de démo (utile pour démo jury / test sans caméra) */}
-      <Card style={{ marginBottom: 16 }}>
-        <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 8 }}>
-          Essayer avec un produit réel
-        </Text>
-        <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>
-          Tape sur un produit pour tester l'API Open Food Facts.
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {DEMO_BARCODES.map((demo) => (
-            <TouchableOpacity
-              key={demo.code}
-              onPress={() => fetchProduct(demo.code)}
-              style={{
-                backgroundColor: colors.surfaceVariant,
-                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 13 }}>{demo.name}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </Card>
 

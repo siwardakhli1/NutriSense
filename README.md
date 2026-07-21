@@ -1,10 +1,16 @@
-# NutriSense
+<div align="center">
 
-**Coach nutritionnel mobile intelligent** — Application React Native + Backend Express/PostgreSQL avec IA embarquée.
+# 🥗 NutriSense
 
-NutriSense combine planification de repas, scan de produits, coaching IA et suivi nutritionnel dans une application mobile multilingue (5 langues), pensée pour aider chacun à mieux manger selon ses préférences, son budget et ses objectifs de santé.
+**Application mobile de nutrition intelligente**
+
+Application mobile multilingue de nutrition combinant planification de repas, scan de produits, coaching conversationnel et suivi nutritionnel.
+
+</div>
 
 ---
+
+NutriSense réunit dans une seule application la planification des repas, le suivi nutritionnel et la gestion des courses, avec des recommandations adaptées aux préférences, au budget et aux objectifs de santé de chaque utilisateur. L'application est multilingue (5 langues, dont l'arabe en RTL) et propose un thème clair/sombre.
 
 ## Sommaire
 
@@ -21,53 +27,60 @@ NutriSense combine planification de repas, scan de produits, coaching IA et suiv
 - [CI/CD](#cicd)
 - [Multilingue](#multilingue)
 - [Conformité RGPD](#conformité-rgpd)
+- [Auteure](#auteure)
 
 ---
 
 ## Fonctionnalités
 
-### Planification de repas
-- Génération automatique d'un plan hebdomadaire (21 repas) via un algorithme de scoring
-- Anti-répétition stricte : chaque semaine, 21 recettes différentes
-- Auto-régénération quand la semaine expire
+### 🗓️ Planification de repas
+- Génération automatique d'un plan hebdomadaire complet : petit-déjeuner, déjeuner et dîner pour chaque jour de la semaine
+- Bascule automatique vers la semaine courante lorsque la semaine change
+- Validation des repas consommés et consultation des jours passés
+- Liste des ingrédients à prévoir pour le jour sélectionné, avec estimation du coût
 - Adaptation aux régimes : végan, végétarien, halal, keto, sans gluten, sans lactose
-- Liste de courses générée automatiquement à partir du plan
 
-### Base de recettes
-- 65 recettes de cuisine du monde (française, italienne, marocaine, indienne, japonaise, mexicaine, etc.)
-- Recettes personnelles : création, modification, export au format JSON
+### 📖 Base de recettes
+- 60 recettes de cuisine du monde (française, italienne, maghrébine, indienne, japonaise, mexicaine, etc.)
+- Recettes personnelles : création, modification, suppression
+- Calcul nutritionnel automatique à partir des ingrédients (table de référence)
 - Favoris et partage via le sélecteur natif iOS/Android
 
-### Coach IA nutritionnel
-- Assistant conversationnel basé sur **Mistral AI**
-- **RAG-lite** avec base de connaissances ANSES/PNNS (10 chunks vectorisés + cosine similarity)
-- Sources citées à chaque réponse
-- Historique conversationnel persisté
-- Mode fallback (règles) si LLM indisponible
+### 🤖 Coach nutritionnel
+- Assistant conversationnel qui répond aux questions nutritionnelles
+- Base de connaissances (recherche par similarité) avec sources citées
+- Historique des échanges persisté
+- Mode de repli à base de règles si le service d'analyse est indisponible
 
-### Scanner de produits
-- Scan de codes-barres via **expo-camera**
+### 📷 Scanner de produits
+- Scan de codes-barres via `expo-camera`
 - Intégration temps réel avec l'API **Open Food Facts**
-- Affichage Nutri-Score, NOVA, Éco-Score, allergènes
-- **Comparateur d'alternatives** : suggère 3 produits plus sains dans la même catégorie
-- Auto-log dans le journal nutritionnel
+- Affichage Nutri-Score, groupe NOVA, Éco-Score et allergènes
+- Comparateur d'alternatives : suggestions de produits plus sains dans la même catégorie
+- Enregistrement dans le journal nutritionnel
 
-### Mode Frigo intelligent
+### 🧊 Mode Frigo
 - Saisie des ingrédients disponibles avec suggestions rapides
-- Suggestion de recettes réalisables avec **matching flou** (dictionnaire de synonymes)
+- Suggestion de recettes réalisables (matching flou par dictionnaire de synonymes)
 - Affichage des ingrédients manquants pour chaque recette
 
-### Suivi nutritionnel
-- Dashboard avec streak, adhérence, insights personnalisés
-- Graphiques calories (14 jours) et poids
-- Objectif santé calculé via formule **Mifflin-St Jeor** (BMR + activité)
-- Suivi des macros (protéines, glucides, lipides, fibres, eau)
+### 🛒 Liste de courses
+- Liste générée automatiquement à partir du plan de la semaine
+- Regroupement des ingrédients de tous les repas de la semaine
+- Estimation du coût total des courses pour aider à maîtriser son budget
 
-### Compte utilisateur
+### 📊 Suivi nutritionnel
+- Tableau de bord : série de jours suivis, taux d'adhérence, points de repère personnalisés
+- Graphiques des calories et du poids
+- Objectif santé calculé via la formule **Mifflin-St Jeor** (métabolisme de base + activité)
+- Suivi des macronutriments (protéines, glucides, lipides, fibres) et de l'eau
+
+### 👤 Compte utilisateur
 - Inscription / connexion avec JWT
-- Refresh token rotation
-- Réinitialisation de mot de passe par email (code à 6 chiffres, 15 min de validité)
+- Rotation des refresh tokens
+- Réinitialisation du mot de passe par email (code à 6 chiffres, valide 15 min)
 - Changement de mot de passe depuis le profil
+- Système d'invitation / parrainage
 
 ---
 
@@ -75,62 +88,63 @@ NutriSense combine planification de repas, scan de produits, coaching IA et suiv
 
 ### Frontend (mobile)
 - **React Native 0.76** + **Expo SDK 52**
-- **Expo Router** (file-based routing)
-- **TypeScript 5.3** (strict mode)
+- **Expo Router** (routing basé sur les fichiers)
+- **TypeScript 5.3** (mode strict)
 - **AsyncStorage** pour la persistance locale
 - **expo-camera** pour le scan de codes-barres
-- **Material Top Tabs** pour la navigation à sous-onglets
+- **Material Top Tabs** pour les sous-onglets
 - **I18nManager** pour la gestion RTL (arabe)
 
 ### Backend (API)
 - **Node.js 20** + **Express 4**
 - **TypeScript** avec compilation stricte
 - **Prisma ORM** avec **PostgreSQL 16**
-- **JWT** (jsonwebtoken) + **bcrypt** (cost 12)
+- **JWT** (jsonwebtoken) + **bcryptjs** (cost 12)
 - **Zod** pour la validation des schémas
 - **Helmet** + **express-rate-limit** pour la sécurité
-- **Swagger** (OpenAPI 3.0) auto-généré
+- **Swagger** (OpenAPI 3.0)
 - **Jest** + **Supertest** pour les tests
 
 ### Services externes
-- **Mistral AI** (chat completions)
+- Service d'analyse nutritionnelle (chat completions)
 - **Open Food Facts API v2** (données produits)
-- **Resend** (envoi d'emails transactionnels)
+- **Resend** (emails transactionnels)
 
 ### DevOps
 - **Docker** multi-stage (backend)
-- **docker-compose** (PostgreSQL + adminer)
-- **GitHub Actions** (CI/CD 4 jobs)
+- **docker-compose** (PostgreSQL + Adminer)
+- **GitHub Actions** (pipeline CI)
+- Déploiement backend sur **Render**, base **PostgreSQL** managée
 
 ---
 
 ## Architecture
 
-Architecture en couches côté backend, séparation stricte des responsabilités :
+Architecture en couches côté backend, avec séparation stricte des responsabilités :
 
 ```
 backend/src/
 ├── config/          # Configuration (database, env)
 ├── middlewares/     # Authentification, validation, rate limit
-├── routes/          # Endpoints Express (thin controllers)
+├── routes/          # Endpoints Express (contrôleurs légers)
 ├── services/        # Logique métier
 ├── schemas/         # Validation Zod
 ├── db/              # Seeding et scripts BDD
 └── utils/           # Helpers
 ```
 
-Modélisation Prisma avec **13 tables** :
+Modélisation Prisma avec **14 modèles** :
 
-| Domaine | Tables |
+| Domaine | Modèles |
 |---|---|
-| Utilisateur | `users`, `user_preferences`, `refresh_tokens`, `password_reset_tokens` |
-| Recettes | `recipes`, `favorites` |
-| Planification | `week_plans`, `shopping_lists` |
-| Suivi | `health_goals`, `nutrition_logs`, `weight_logs` |
-| IA | `ai_conversations` |
-| Divers | `product_cache`, `fridge_items` |
+| Utilisateur | `User`, `UserPreference`, `RefreshToken`, `PasswordResetToken` |
+| Recettes | `Recipe`, `Favorite` |
+| Planification | `WeekPlan`, `ShoppingList` |
+| Suivi | `HealthGoal`, `NutritionLog`, `WeightLog` |
+| Assistant | `AiConversation` |
+| Divers | `ProductCache`, `FridgeItem` |
 
-Toutes les relations utilisent `onDelete: Cascade` pour respecter le RGPD.
+Toutes les relations sensibles utilisent `onDelete: Cascade` pour garantir la suppression complète des données (RGPD).
 
 ---
 
@@ -139,9 +153,9 @@ Toutes les relations utilisent `onDelete: Cascade` pour respecter le RGPD.
 ### Prérequis
 
 - **Node.js** 20 ou supérieur
-- **Docker Desktop** (pour PostgreSQL)
+- **Docker Desktop** (pour PostgreSQL en local)
 - **npm** 9+
-- Un émulateur Android/iOS ou l'app **Expo Go** sur ton téléphone
+- Un émulateur Android/iOS ou l'application **Expo Go** sur un téléphone
 
 ### Cloner le projet
 
@@ -156,22 +170,13 @@ cd NutriSense
 
 ### Base de données PostgreSQL
 
-Démarrer PostgreSQL via Docker :
-
 ```bash
 docker compose up -d postgres
 ```
 
 ### Variables d'environnement (backend)
 
-Créer `backend/.env` à partir du template :
-
-```bash
-cd backend
-cp .env.example .env
-```
-
-Contenu minimal :
+Créer un fichier `backend/.env` avec le contenu suivant :
 
 ```ini
 NODE_ENV=development
@@ -183,7 +188,7 @@ JWT_SECRET=change-me-with-a-random-secret
 JWT_ACCESS_EXPIRES=15m
 JWT_REFRESH_EXPIRES=7d
 
-# LLM : "mistral", "openai" ou "fallback"
+# Fournisseur d'analyse : "mistral", "openai" ou "fallback"
 LLM_PROVIDER=fallback
 LLM_API_KEY=
 LLM_MODEL=mistral-small-latest
@@ -207,7 +212,7 @@ npx prisma generate
 npx prisma migrate dev
 ```
 
-Les migrations créent les 13 tables. Au premier démarrage, les **65 recettes** sont insérées automatiquement.
+Les migrations créent les tables. Au premier démarrage, les **60 recettes** sont insérées automatiquement.
 
 ### IP du backend (frontend)
 
@@ -258,33 +263,48 @@ Puis :
 ```
 NutriSense/
 ├── app/                          # Écrans Expo Router
-│   ├── (auth)/                   # Login, register, forgot password
-│   ├── (onboarding)/             # Onboarding en 3 étapes
+│   ├── (auth)/                   # Login, register, mot de passe oublié
+│   ├── (onboarding)/             # Parcours de démarrage
 │   ├── (tabs)/                   # Navigation principale
 │   │   ├── index.tsx             # Plan repas hebdomadaire
 │   │   ├── cuisine/              # Recettes, frigo, scanner, courses
-│   │   ├── coach.tsx             # Assistant IA
-│   │   ├── suivi/                # Stats et santé
+│   │   │   ├── recipes.tsx       # Liste des recettes
+│   │   │   ├── fridge.tsx        # Mode frigo
+│   │   │   ├── scanner.tsx       # Scanner de codes-barres
+│   │   │   └── shopping.tsx      # Liste de courses
+│   │   ├── coach.tsx             # Assistant nutritionnel
+│   │   ├── suivi/                # Statistiques et santé
+│   │   │   ├── stats.tsx         # Graphiques nutritionnels
+│   │   │   └── health.tsx        # Objectif santé et poids
 │   │   └── profile.tsx           # Profil utilisateur
 │   ├── recipe/[id].tsx           # Détail d'une recette
-│   ├── preferences.tsx           # Édition des préférences
-│   ├── favorites.tsx             # Recettes favorites
-│   ├── my-recipes.tsx            # Recettes personnelles
 │   ├── edit-recipe.tsx           # Création / édition de recette
-│   ├── change-password.tsx       # Changement mot de passe
-│   └── _layout.tsx               # Layout racine (auth guard)
+│   ├── my-recipes.tsx            # Recettes personnelles
+│   ├── favorites.tsx             # Recettes favorites
+│   ├── preferences.tsx           # Édition des préférences
+│   ├── account.tsx               # Gestion du compte (RGPD)
+│   ├── change-password.tsx       # Changement de mot de passe
+│   ├── invite.tsx                # Invitation / parrainage
+│   ├── admin.tsx                 # Espace d'administration
+│   ├── admin-users.tsx           # Gestion des utilisateurs
+│   ├── admin-recipes.tsx         # Gestion des recettes
+│   ├── legal/                    # Mentions légales et conditions
+│   ├── privacy.tsx               # Politique de confidentialité
+│   └── _layout.tsx               # Layout 
 ├── components/                   # Composants réutilisables
-├── contexts/                     # AuthContext, MealPlanContext, ThemeContext, LanguageContext
+├── contexts/                     # Auth, MealPlan, Theme, Language
 ├── hooks/                        # useAppContexts, useNativeAPIs, useShare
 ├── i18n/                         # Traductions FR, EN, ES, IT, AR
-├── services/api.ts               # Client HTTP avec refresh auto
+├── services/api.ts               # Client HTTP avec refresh automatique
 ├── types/index.ts                # Types TypeScript partagés
 ├── constants/Colors.ts           # Palettes clair/sombre
+├── utils/                        # Fonctions utilitaires (format, nutrition)
 ├── backend/                      # API Express
 ├── .github/workflows/            # CI GitHub Actions
+├── app.json                      # Configuration Expo
+├── tsconfig.json                 # Configuration TypeScript
 ├── docker-compose.yml
 ├── README.md
-├── CHANGELOG.md
 └── package.json
 ```
 
@@ -292,7 +312,7 @@ NutriSense/
 
 ## API
 
-Documentation Swagger complète auto-générée : `http://localhost:3000/api/docs`
+Documentation Swagger complète : `http://localhost:3000/api/docs`
 
 ### Endpoints principaux
 
@@ -300,59 +320,55 @@ Documentation Swagger complète auto-générée : `http://localhost:3000/api/doc
 |---|---|---|
 | `POST` | `/api/auth/register` | Inscription |
 | `POST` | `/api/auth/login` | Connexion |
-| `POST` | `/api/auth/refresh` | Refresh du token |
-| `POST` | `/api/auth/forgot-password` | Demande de reset (email) |
-| `POST` | `/api/auth/reset-password` | Reset avec code |
-| `POST` | `/api/auth/change-password` | Changement de mdp (authentifié) |
+| `POST` | `/api/auth/refresh` | Renouvellement du token |
+| `POST` | `/api/auth/forgot-password` | Demande de réinitialisation (email) |
+| `POST` | `/api/auth/reset-password` | Réinitialisation avec code |
+| `POST` | `/api/auth/change-password` | Changement de mot de passe |
+| `GET` | `/api/auth/export` | Export des données personnelles (RGPD) |
 | `DELETE` | `/api/auth/account` | Suppression du compte (RGPD) |
-| `GET` | `/api/preferences` | Récupérer les préférences |
-| `PUT` | `/api/preferences` | Modifier les préférences |
+| `GET` | `/api/auth/me` | Profil de l'utilisateur connecté |
 | `GET` | `/api/meals/current` | Plan de la semaine en cours |
 | `POST` | `/api/meals/generate` | Générer un nouveau plan |
+| `POST` | `/api/meals/regenerate-from-today` | Régénérer à partir d'aujourd'hui |
 | `GET` | `/api/recipes` | Liste des recettes |
-| `GET` | `/api/recipes/mine` | Mes recettes personnelles |
-| `POST` | `/api/recipes/mine` | Créer une recette |
+| `POST` | `/api/recipes` | Créer une recette personnelle |
+| `GET` | `/api/recipes/:id` | Détail d'une recette |
 | `GET` | `/api/recipes/favorites/list` | Liste des favoris |
-| `POST` | `/api/recipes/:id/favorite` | Ajouter en favori |
-| `GET` | `/api/nutrition/product/:barcode` | Analyser un produit (OFF) |
-| `GET` | `/api/nutrition/product/:barcode/alternatives` | Alternatives plus saines |
+| `POST` | `/api/recipes/:id/favorite` | Ajouter aux favoris |
+| `GET` | `/api/nutrition/product/:barcode` | Analyser un produit (Open Food Facts) |
 | `GET` | `/api/fridge/items` | Ingrédients du frigo |
 | `GET` | `/api/fridge/suggestions` | Recettes réalisables |
-| `POST` | `/api/ai/advice` | Question au coach IA |
+| `POST` | `/api/ai/advice` | Question au coach nutritionnel |
 | `GET` | `/api/analytics/dashboard` | Tableau de bord nutritionnel |
-| `POST` | `/api/logs/nutrition` | Logger un repas |
-| `POST` | `/api/logs/weight` | Logger une pesée |
-| `GET` | `/api/health-goals/latest` | Objectif santé actuel |
-| `POST` | `/api/health-goals` | Définir un objectif |
 
 ---
 
 ## Sécurité
 
-L'application couvre les principales failles OWASP Top 10 :
+L'application couvre les principales catégories de l'OWASP Top 10 :
 
-| Faille OWASP | Mesure |
+| Catégorie OWASP | Mesure |
 |---|---|
 | A01 – Broken Access Control | Middleware `authMiddleware` sur les routes protégées |
-| A02 – Cryptographic Failures | bcrypt cost 12, JWT signé HS256 |
-| A03 – Injection | Prisma ORM (requêtes paramétrisées) + validation Zod |
+| A02 – Cryptographic Failures | bcryptjs (cost 12), JWT signé HS256 |
+| A03 – Injection | Prisma ORM (requêtes paramétrées) + validation Zod |
 | A04 – Insecure Design | Architecture en couches, séparation des responsabilités |
 | A05 – Security Misconfiguration | Helmet, secrets en `.env`, CORS configuré |
-| A07 – Auth & Session | Rate limiting sur `/auth`, refresh token rotation |
-| A08 – Data Integrity | JWT signés, refresh tokens stockés en BDD |
-| A09 – Logging | Morgan + console structuré |
-| A10 – SSRF | Aucun appel dynamique côté serveur |
+| A07 – Auth & Session | Rate limiting sur `/auth`, rotation des refresh tokens |
+| A08 – Data Integrity | JWT signés, refresh tokens stockés en base |
+| A09 – Logging | Journalisation structurée (Morgan) |
+| A10 – SSRF | Aucun appel dynamique arbitraire côté serveur |
 
 **Rate limiting** :
 - Global : 100 requêtes / 15 min
-- Authentification : 5 requêtes / 15 min
-- Coach IA : 20 requêtes / 15 min
+- Authentification : limite renforcée sur `/auth`
+- Coach nutritionnel : 20 requêtes / 15 min
 
 ---
 
 ## Tests
 
-Exécuter les tests unitaires backend :
+Exécuter les tests backend :
 
 ```bash
 cd backend
@@ -367,26 +383,81 @@ npm test -- --coverage
 
 Le rapport HTML est disponible dans `backend/coverage/lcov-report/index.html`.
 
+La suite couvre à la fois des tests unitaires (fonctions pures : scoring, calculs nutritionnels, helpers) et des tests d'intégration (endpoints authentifiés, sécurité, cycle de vie des plans).
+
 ---
 
 ## CI/CD
 
-Le fichier `.github/workflows/ci.yml` définit un pipeline avec **4 jobs parallèles** déclenchés à chaque push/pull request :
+Le projet met en œuvre une chaîne d'intégration et de déploiement continus.
+
+### Intégration continue (CI)
+
+Le fichier `.github/workflows/ci.yml` définit un pipeline déclenché à chaque push et pull request sur `main` :
 
 | Job | Description |
 |---|---|
-| **backend** | Install → Prisma generate → Migrations → Lint → Build → Tests + coverage |
-| **frontend** | Install → Type-check TypeScript → Lint Expo |
+| **backend** | Install → Prisma generate → Migrations → Build → Tests + couverture |
+| **frontend** | Install → Vérification des types TypeScript |
 | **docker** | Build de l'image Docker multi-stage (validation) |
-| **security** | `npm audit` sur backend et frontend |
+| **security** | `npm audit` sur le backend et le frontend |
 
 Un service PostgreSQL éphémère est instancié pendant les tests d'intégration.
+
+### Déploiement continu (CD)
+
+Le backend est déployé sur **Render** et la base de données sur une instance **PostgreSQL managée** (Neon). Chaque push sur `main` validé par la CI déclenche un nouveau build et une **mise en production automatique**.
+
+L'API est accessible en production à l'adresse **https://nutrisense-2026.onrender.com** (documentation Swagger sur `/api/docs`).
+
+#### Conteneurisation
+
+Le backend est packagé via un **Dockerfile multi-stage** :
+- Un stage *builder* installe les dépendances, génère le client Prisma et compile le TypeScript.
+- Un stage *runtime* léger (`node:20-alpine`) ne conserve que les dépendances de production et le code compilé.
+- Un `HEALTHCHECK` interroge l'endpoint `/health` toutes les 30 secondes.
+- Les **migrations Prisma sont appliquées automatiquement au démarrage** (`prisma migrate deploy`) avant le lancement du serveur.
+
+#### Configuration Render
+
+| Paramètre | Valeur |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `npm install && npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/health` |
+
+#### Variables d'environnement de production
+
+À configurer dans le tableau de bord Render :
+
+```ini
+DATABASE_URL=postgresql://...        # fournie par la base managée
+JWT_SECRET=...                       # secret aléatoire
+JWT_ACCESS_EXPIRES=15m
+JWT_REFRESH_EXPIRES=7d
+NODE_ENV=production
+LLM_PROVIDER=mistral
+LLM_API_KEY=...
+LLM_MODEL=mistral-small-latest
+LLM_BASE_URL=https://api.mistral.ai/v1
+```
+
+#### Frontend
+
+L'application mobile pointe vers l'URL de production du backend. Pour générer un binaire distribuable (APK / IPA), le projet utilise **EAS Build** :
+
+```bash
+npx eas build --platform android
+```
+
+En développement, l'application reste lancée via Expo Go (`npx expo start`), pointant soit vers un backend local, soit vers l'API de production.
 
 ---
 
 ## Multilingue
 
-L'application supporte **5 langues** avec sélection en temps réel :
+L'application prend en charge **5 langues** avec changement en temps réel :
 
 | Code | Langue | Sens de lecture |
 |---|---|---|
@@ -396,42 +467,40 @@ L'application supporte **5 langues** avec sélection en temps réel :
 | `it` | Italiano | LTR |
 | `ar` | العربية | **RTL** (droite à gauche) |
 
-La détection RTL utilise l'API native `I18nManager` de React Native. L'utilisateur peut changer de langue depuis **Profil > Langue** via un modal avec drapeaux et noms natifs.
+La gestion RTL s'appuie sur l'API native `I18nManager` de React Native. Le changement de langue se fait depuis **Profil → Langue**.
 
 ---
 
 ## Conformité RGPD
 
-L'application respecte le RGPD dans son architecture :
+- **Article 15** – Droit d'accès : `GET /api/auth/export`
+- **Article 17** – Droit à l'oubli : `DELETE /api/auth/account` (avec double confirmation)
+- **Article 20** – Portabilité : export JSON complet des données
+- **Article 32** – Sécurité du traitement : bcryptjs, JWT, prêt pour HTTPS
 
-- **Article 15** – Droit d'accès : endpoint `GET /api/auth/export`
-- **Article 17** – Droit à l'oubli : endpoint `DELETE /api/auth/account`
-- **Article 20** – Portabilité des données : export JSON complet
-- **Article 32** – Sécurité du traitement : bcrypt, JWT, HTTPS-ready
-
-Toutes les relations Prisma utilisent `onDelete: Cascade` pour garantir la suppression complète des données lorsqu'un utilisateur supprime son compte.
+Toutes les relations sensibles utilisent `onDelete: Cascade`, garantissant la suppression complète des données lors de la suppression d'un compte.
 
 ---
 
 ## Contribuer
 
-Le projet suit une convention de commits inspirée de **Conventional Commits** :
+Convention de commits inspirée de **Conventional Commits** :
 
 ```
-feat: ajout d'une fonctionnalité
-fix: correction d'un bug
-docs: mise à jour de la documentation
+feat:     ajout d'une fonctionnalité
+fix:      correction d'un bug
+docs:     mise à jour de la documentation
 refactor: refactoring sans changement fonctionnel
-test: ajout de tests
-chore: tâches diverses (config, deps...)
+test:     ajout de tests
+chore:    tâches diverses (config, dépendances...)
 ```
 
 ---
 
 ## Licence
 
-Projet réalisé dans le cadre d'un titre RNCP 39583 – Expert en développement logiciel.
+Projet réalisé dans le cadre du titre **RNCP 39583 – Expert en développement logiciel** (niveau 7, Bac +5).
 
 ## Auteure
 
-**Dakhli Siwar** – 2026
+**Dakhli Siwar** — 2026
