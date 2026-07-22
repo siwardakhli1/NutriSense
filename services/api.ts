@@ -8,9 +8,9 @@ import { ApiResponse } from '@/types';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ⚠️ Sur téléphone réel : remplace localhost par l'IP de ton PC (ex: 192.168.1.42)
-const API_BASE_URL = 'https://nutrisense-2026.onrender.com/api'; // ☁️ Production (Render)
-// const API_BASE_URL = 'http://10.0.2.2:3000/api';             // 💻 Local (émulateur)
+//  Sur téléphone réel : remplace localhost par l'IP de ton PC (ex: 192.168.1.42)
+const API_BASE_URL = 'https://nutrisense-2026.onrender.com/api'; //  Production (Render)
+// const API_BASE_URL = 'http://10.0.2.2:3000/api';             //  Local (émulateur)
 const TIMEOUT_MS = 60000;
  
 

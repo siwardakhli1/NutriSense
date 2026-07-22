@@ -11,11 +11,11 @@ async function sendEmail(opts: EmailOptions): Promise<void> {
   const provider = process.env.EMAIL_PROVIDER || 'console';
 
   // Mode "console" : n'envoie pas réellement, affiche dans le terminal
-  // Parfait pour le dev / la démo jury sans setup
+ 
   if (provider === 'console') {
     console.log('');
     console.log('════════════════════════════════════════════════');
-    console.log('📧 EMAIL (mode console - non envoyé réellement)');
+    console.log(' EMAIL (mode console - non envoyé réellement)');
     console.log('════════════════════════════════════════════════');
     console.log(`À        : ${opts.to}`);
     console.log(`Sujet    : ${opts.subject}`);
@@ -39,9 +39,9 @@ async function sendEmail(opts: EmailOptions): Promise<void> {
         html: opts.html,
         text: opts.text,
       });
-      console.log(`✅ Email envoyé à ${opts.to} via Resend`);
+      console.log(` Email envoyé à ${opts.to} via Resend`);
     } catch (err: any) {
-      console.error('❌ Erreur envoi email (Resend) :', err.message);
+      console.error(' Erreur envoi email (Resend) :', err.message);
       throw new Error("Impossible d'envoyer l'email");
     }
     return;
@@ -65,9 +65,9 @@ async function sendEmail(opts: EmailOptions): Promise<void> {
         html: opts.html,
         text: opts.text,
       });
-      console.log(`✅ Email envoyé à ${opts.to} via Gmail`);
+      console.log(` Email envoyé à ${opts.to} via Gmail`);
     } catch (err: any) {
-      console.error('❌ Erreur envoi email (Gmail) :', err.message);
+      console.error(' Erreur envoi email (Gmail) :', err.message);
       throw new Error("Impossible d'envoyer l'email");
     }
     return;

@@ -31,7 +31,6 @@ const handleLogin = async () => {
 
   setError('');
   const result = await login(email, password);
-  console.log('>>> RESULT LOGIN:', JSON.stringify(result));  // DEBUG
   if (result.success) {
     vibrate();
   } else {

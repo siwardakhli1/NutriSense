@@ -146,7 +146,7 @@ const options: swaggerJsdoc.Options = {
     openapi: '3.0.0',
     info: {
       title: 'NutriSense API',
-      version: '2.0.0',
+      version: '3.0.0',
       description: 'API REST — projet fin d\'études Bac+5. Assistant nutritionnel avec RAG-lite, Open Food Facts, analytics, mode frigo, conformité RGPD.',
       contact: { name: 'Sirine' },
     },
@@ -185,5 +185,5 @@ export function setupSwagger(app: Express): void {
     customSiteTitle: 'NutriSense API Docs',
   }));
   app.get('/api/openapi.json', (_req, res) => res.json(specs));
-  console.log('📖 Swagger disponible : /api/docs');
+  console.log('Swagger disponible : /api/docs');
 }

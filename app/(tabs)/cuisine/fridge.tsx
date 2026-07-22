@@ -243,7 +243,7 @@ export default function FridgeScreen() {
               {match.matchedIngredients.length > 0 && (
                 <View style={{ marginTop: 8 }}>
                   <Text style={{ fontSize: 11, color: colors.success, fontWeight: '600' }}>
-                    ✅ Que tu as : {match.matchedIngredients.join(', ')}
+                     Que tu as : {match.matchedIngredients.join(', ')}
                   </Text>
                 </View>
               )}

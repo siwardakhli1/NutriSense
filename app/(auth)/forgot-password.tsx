@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen() {
 
     if (res.success) {
       Alert.alert(
-        '📧 Email envoyé',
+        'Email envoyé',
         'Si un compte existe pour cet email, tu vas recevoir un code à 6 chiffres. Vérifie ta boîte de réception (et le dossier spam).',
         [{
           text: "J'ai reçu le code",

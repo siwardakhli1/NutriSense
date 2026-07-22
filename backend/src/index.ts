@@ -145,7 +145,7 @@ async function start() {
 
   const server = app.listen(env.PORT, () => {
     console.log('╔═══════════════════════════════════════╗');
-    console.log('║   🚀 NutriSense API v2.0.0         ║');
+    console.log('║    NutriSense API v3.0.0         ║');
     console.log('╠═══════════════════════════════════════╣');
     console.log(`║   API   : http://localhost:${env.PORT}       ║`);
     console.log(`║   Docs  : http://localhost:${env.PORT}/api/docs`);

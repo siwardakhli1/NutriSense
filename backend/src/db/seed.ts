@@ -16,7 +16,7 @@ export async function seedRecipes(): Promise<void> {
 
   const recipes = [
     // ==========================================================
-    // ☕ BOISSONS PETIT-DÉJEUNER (tag: boisson + breakfast)
+    //  BOISSONS PETIT-DÉJEUNER (tag: boisson + breakfast)
     // ==========================================================
     { id: 'bo01', name: 'Café au lait', emoji: null, timeMinutes: 5, servings: 1, difficulty: 'facile',
       ingredients: [
@@ -52,7 +52,7 @@ export async function seedRecipes(): Promise<void> {
       tags: ['vegan', 'vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'healthy', 'fast', 'breakfast', 'boisson'] },
 
     // ==========================================================
-    // 🥣 PRINCIPAUX PETIT-DÉJEUNER (tag: pdej_principal + breakfast)
+    //  PRINCIPAUX PETIT-DÉJEUNER (tag: pdej_principal + breakfast)
     // ==========================================================
     { id: 'pd01', name: 'Bowl d\'avoine banane cannelle', emoji: null, timeMinutes: 8, servings: 1, difficulty: 'facile',
       ingredients: [
@@ -103,7 +103,7 @@ export async function seedRecipes(): Promise<void> {
       tags: ['vegan', 'vegetarian', 'halal', 'sans_lactose', 'healthy', 'budget', 'breakfast', 'pdej_principal'] },
 
     // ==========================================================
-    // 🍎 FRUITS PETIT-DÉJEUNER (tag: fruit + breakfast)
+    //  FRUITS PETIT-DÉJEUNER (tag: fruit + breakfast)
     // ==========================================================
     { id: 'fr01', name: 'Salade de fruits frais', emoji: null, timeMinutes: 10, servings: 1, difficulty: 'facile',
       ingredients: [
@@ -129,7 +129,7 @@ export async function seedRecipes(): Promise<void> {
       tags: ['vegan', 'vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'healthy', 'budget', 'fast', 'breakfast', 'fruit'] },
 
     // ==========================================================
-    // 🥗 ENTRÉES DÉJEUNER (tag: entree + lunch)
+    //  ENTRÉES DÉJEUNER (tag: entree + lunch)
     // ==========================================================
     { id: 'en01', name: 'Salade méchouia tunisienne', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
@@ -181,7 +181,7 @@ export async function seedRecipes(): Promise<void> {
       tags: ['vegan', 'vegetarian', 'halal', 'sans_gluten', 'sans_lactose', 'healthy', 'budget', 'fast', 'lunch', 'entree'] },
 
     // ==========================================================
-    // 🍽️ PLATS PRINCIPAUX (tag: plat + lunch/dinner)
+    //  PLATS PRINCIPAUX (tag: plat + lunch/dinner)
     // ==========================================================
     { id: 'pl01', name: 'Couscous royal aux légumes', emoji: null, timeMinutes: 60, servings: 4, difficulty: 'moyen',
       ingredients: [
@@ -268,7 +268,7 @@ export async function seedRecipes(): Promise<void> {
       tags: ['halal', 'sans_lactose', 'healthy', 'muscle', 'fast', 'lunch', 'dinner', 'plat'] },
 
     // ==========================================================
-    // 🍰 DESSERTS (tag: dessert + lunch/dinner)
+    //  DESSERTS (tag: dessert + lunch/dinner)
     // ==========================================================
     { id: 'de01', name: 'Makroud aux dattes', emoji: null, timeMinutes: 40, servings: 4, difficulty: 'moyen',
       ingredients: [
@@ -317,7 +317,7 @@ export async function seedRecipes(): Promise<void> {
 
 
     // ==========================================================
-    // 🥑 RECETTES KETO (peu de glucides)
+    //  RECETTES KETO (peu de glucides)
     // ==========================================================
     { id: 'kt01', name: 'Poulet grillé et courgettes', emoji: null, timeMinutes: 25, servings: 2, difficulty: 'facile',
       ingredients: [
@@ -356,7 +356,7 @@ export async function seedRecipes(): Promise<void> {
 
 
     // ==========================================================
-    // 🌱 PLATS VEGAN supplémentaires (pour varier sur 7 jours)
+    //  PLATS VEGAN supplémentaires (pour varier sur 7 jours)
     // ==========================================================
     { id: 'vg01', name: 'Dahl de lentilles corail', emoji: null, timeMinutes: 30, servings: 3, difficulty: 'facile',
       ingredients: [
@@ -430,7 +430,7 @@ export async function seedRecipes(): Promise<void> {
 
 
     // ==========================================================
-    // 🥑 RECETTES KETO supplémentaires (pour varier sur 7 jours)
+    //  RECETTES KETO supplémentaires (pour varier sur 7 jours)
     // ==========================================================
     { id: 'kt05', name: 'Steak et haricots verts', emoji: null, timeMinutes: 20, servings: 2, difficulty: 'facile',
       ingredients: [
@@ -487,7 +487,7 @@ export async function seedRecipes(): Promise<void> {
 
 
     // ==========================================================
-    // 🧀 PLATS VÉGÉTARIENS + variés supplémentaires
+    //  PLATS VÉGÉTARIENS + variés supplémentaires
     // ==========================================================
     { id: 'vt01', name: 'Risotto aux champignons', emoji: null, timeMinutes: 35, servings: 3, difficulty: 'moyen',
       ingredients: [
@@ -566,7 +566,7 @@ export async function seedRecipes(): Promise<void> {
 
 
     // ==========================================================
-    // ⭐ RECETTES PREMIUM (débloquées au palier 3 amis parrainés)
+    //  RECETTES PREMIUM (débloquées au palier 3 amis parrainés)
     // Gastronomiques, tag 'premium' → cachées tant que invitedCount < 3
     // ==========================================================
     { id: 'pr01', name: 'Risotto aux truffes', emoji: null, timeMinutes: 40, servings: 2, difficulty: 'difficile',

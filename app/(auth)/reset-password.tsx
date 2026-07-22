@@ -48,7 +48,7 @@ export default function ResetPasswordScreen() {
 
     if (res.success) {
       Alert.alert(
-        '✅ Mot de passe réinitialisé',
+        ' Mot de passe réinitialisé',
         'Tu peux maintenant te connecter avec ton nouveau mot de passe.',
         [{ text: 'Se connecter', onPress: () => router.replace('/(auth)/login') }]
       );

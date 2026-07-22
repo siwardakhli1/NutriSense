@@ -21,9 +21,9 @@ if (env.NODE_ENV !== 'production') global.__prisma = prisma;
 export async function initDatabase(): Promise<void> {
   try {
     await prisma.$connect();
-    console.log('✅ PostgreSQL connecté');
+    console.log(' PostgreSQL connecté');
   } catch (err) {
-    console.error('❌ Erreur connexion PostgreSQL:', (err as Error).message);
+    console.error(' Erreur connexion PostgreSQL:', (err as Error).message);
     console.error('   Vérifie DATABASE_URL dans .env et que Postgres tourne');
     process.exit(1);
   }
