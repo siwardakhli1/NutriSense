@@ -3,6 +3,7 @@
 // ==========================================
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useLanguage, useMealPlan, useAuth } from '@/hooks/useAppContexts';
@@ -71,11 +72,16 @@ export default function OnboardingPreferences() {
 
     vibrateSuccess();
 
+    // La notification de bienvenue n'est envoyée que si l'utilisateur
+    // a explicitement activé les notifications dans son profil.
     try {
-      await scheduleNotification(
-        'Bienvenue sur NutriSense',
-        'Ton plan repas de la semaine est prêt.',
-      );
+      const notificationsEnabled = await AsyncStorage.getItem('notifications_enabled');
+      if (notificationsEnabled === 'true') {
+        await scheduleNotification(
+          'Bienvenue sur NutriSense',
+          'Ton plan repas de la semaine est prêt.',
+        );
+      }
     } catch (e) {
       console.warn('Notification error:', e);
     }
