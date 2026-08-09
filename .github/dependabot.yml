@@ -10,9 +10,11 @@
 #   - Patch et mineure : regroupées dans une seule PR automatique par périmètre,
 #     fusionnées après validation de la CI (build + 279 tests + audit + Docker).
 #   - Majeure : PR individuelle, traitement manuel sur branche dédiée.
-#   - expo / react-native / react : majeures exclues. Ces paquets se mettent à
-#     jour via `expo upgrade`, qui aligne aussi la couche native (Android/iOS).
-#     Une montée de version par npm casserait le build.
+#   - Écosystème Expo / React Native : majeures exclues des mises à jour npm.
+#     Ces paquets sont versionnés de façon solidaire avec le SDK Expo et se
+#     mettent à jour via `expo upgrade`, qui aligne aussi la couche native
+#     (Android / iOS). Une montée de version majeure par npm désynchroniserait
+#     le JavaScript et le natif, et casserait le build.
 
 version: 2
 
@@ -61,14 +63,27 @@ updates:
           - "patch"
           - "minor"
     ignore:
-      # Majeures pilotées par `expo upgrade`, pas par npm
-      - dependency-name: "expo"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native"
-        update-types: ["version-update:semver-major"]
+      # --- Coeur React ---
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+      # --- Ecosysteme Expo (expo, expo-font, expo-router, expo-haptics, ...) ---
+      # Versionnes de facon solidaire avec le SDK : `expo upgrade` uniquement.
+      - dependency-name: "expo*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major"]
+
+      # --- Ecosysteme React Native ---
+      # Couvre react-native et les modules communautaires
+      # (@react-native-community/slider, @react-native-async-storage/...)
+      - dependency-name: "react-native*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-native-*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-navigation/*"
         update-types: ["version-update:semver-major"]
 
   # ==========================================
