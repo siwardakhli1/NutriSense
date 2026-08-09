@@ -1,0 +1,88 @@
+# ==========================================
+# DEPENDABOT - Surveillance des dépendances NutriSense
+# ==========================================
+# Trois périmètres distincts sont surveillés :
+#   1. Backend  (API Express / Node 20)      -> /backend/package.json
+#   2. Frontend (React Native / Expo SDK 52) -> /package.json
+#   3. Pipeline CI (actions GitHub)          -> /.github/workflows/
+#
+# Politique retenue :
+#   - Patch et mineure : regroupées dans une seule PR automatique par périmètre,
+#     fusionnées après validation de la CI (build + 279 tests + audit + Docker).
+#   - Majeure : PR individuelle, traitement manuel sur branche dédiée.
+#   - expo / react-native / react : majeures exclues. Ces paquets se mettent à
+#     jour via `expo upgrade`, qui aligne aussi la couche native (Android/iOS).
+#     Une montée de version par npm casserait le build.
+
+version: 2
+
+updates:
+  # ==========================================
+  # 1. BACKEND - API Express (Node 20)
+  # ==========================================
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    labels:
+      - "dependencies"
+    groups:
+      backend-patch-minor:
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ==========================================
+  # 2. FRONTEND - React Native / Expo SDK 52
+  # ==========================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    labels:
+      - "dependencies"
+    groups:
+      frontend-patch-minor:
+        update-types:
+          - "patch"
+          - "minor"
+    ignore:
+      # Majeures pilotées par `expo upgrade`, pas par npm
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # ==========================================
+  # 3. PIPELINE CI - Actions GitHub
+  # ==========================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
