@@ -11,6 +11,7 @@ import { setupSwagger } from './swagger';
 import { globalLimiter } from './middlewares/rateLimit.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { hideStack, limitPayloadSize, preventPathTraversal, requestTracing } from './middlewares/security.middleware';
+import { requestMonitoring } from './middlewares/monitoring.middleware';
 
 import authRoutes from './routes/auth.routes';
 import nutritionRoutes from './routes/nutrition.routes';
@@ -54,6 +55,7 @@ app.use(helmet({
 app.use(cors());
 app.use(hideStack);                        // OWASP A05 : cache la stack technique
 app.use(requestTracing);                   // OWASP A09 : traçabilité des requêtes
+app.use(requestMonitoring);                // Supervision : temps de réponse et taux d'erreur
 app.use(limitPayloadSize(5_000_000));      // OWASP A05 : DoS prevention (5MB max)
 app.use(preventPathTraversal);             // OWASP A01 : anti-path-traversal
 app.use(express.json({ limit: '5mb' }));
