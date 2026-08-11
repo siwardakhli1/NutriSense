@@ -3,6 +3,7 @@
 // ==========================================
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database';
 import { env } from '../config/env';
@@ -254,7 +255,7 @@ router.post('/forgot-password', authLimiter, async (req: Request, res: Response)
   });
 
   // Générer un code à 6 chiffres
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const code = String(randomInt(100000, 1000000));
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
 
   await prisma.passwordResetToken.create({
